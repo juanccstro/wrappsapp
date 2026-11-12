@@ -1,11 +1,22 @@
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
-import type { WrappedResult } from '../../core';
+import {
+  AnimatePresence,
+  motion,
+  MotionConfig,
+  useReducedMotion,
+  type Variant,
+  type Variants,
+} from 'framer-motion';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import type { Slide, SlideKind, WrappedResult } from '../../core';
 import { es } from '../../i18n/es';
 import { Button } from '../components/Shell';
 import { CloseIcon, PauseIcon, PlayIcon } from '../components/icons';
 import { clampIndex, classifyGesture, HOLD_MS } from './gestures';
-import { SlideView } from './SlideView';
+import { Background } from '../backgrounds/Background';
+import type { SlideCtx } from '../slides/common';
+import { CARD_MS } from '../slides/PersonCards';
+import { SlideView } from '../slides/SlideView';
+import { paletteVars, slideGradient } from '../theme/palettes';
 
 type Props = {
   wrapped: WrappedResult;
@@ -14,21 +25,54 @@ type Props = {
   onClose: () => void;
 };
 
-/** Backgrounds rotate through the palette, one per slide. */
-const GRADIENTS = [
-  'linear-gradient(160deg, var(--wr-c), var(--wr-a))',
-  'linear-gradient(160deg, var(--wr-a), var(--wr-b))',
-  'linear-gradient(160deg, #1b0a44, var(--wr-c))',
-  'linear-gradient(160deg, var(--wr-d), var(--wr-c))',
-  'linear-gradient(160deg, #2a0b3d, var(--wr-a))',
-];
+/** The people slide lasts as long as its cards need. */
+const durationOf = (slide: Slide) =>
+  slide.kind === 'people'
+    ? Math.max(slide.durationMs, slide.data.cards.length * CARD_MS + 1200)
+    : slide.durationMs;
+
+type Motion = { initial: Variant; exit: Variant };
+
+/** Different kinds of slide arrive in different ways. */
+const TRANSITIONS: Record<'zoom' | 'rise' | 'wipe' | 'slide', Motion> = {
+  zoom: { initial: { opacity: 0, scale: 1.08 }, exit: { opacity: 0, scale: 0.95 } },
+  rise: { initial: { opacity: 0, y: '18%' }, exit: { opacity: 0, y: '-12%' } },
+  wipe: {
+    initial: { clipPath: 'circle(0% at 50% 60%)', opacity: 1 },
+    exit: { opacity: 0, scale: 0.97 },
+  },
+  slide: { initial: { opacity: 0, x: '30%' }, exit: { opacity: 0, x: '-30%' } },
+};
+
+function transitionOf(kind: SlideKind): Motion {
+  switch (kind) {
+    case 'intro':
+    case 'vibe':
+    case 'busiestDay':
+    case 'quiz':
+      return TRANSITIONS.wipe;
+    case 'total':
+    case 'laughs':
+    case 'streakSilence':
+    case 'fact':
+    case 'summary':
+      return TRANSITIONS.rise;
+    case 'race':
+    case 'replySpeed':
+    case 'ranking':
+    case 'starterVsMystery':
+      return TRANSITIONS.slide;
+    default:
+      return TRANSITIONS.zoom;
+  }
+}
 
 /**
  * Stories player: progress bars, tap right/left, swipe, hold to pause, keyboard and
  * auto-advance. Slides only need to render; all navigation lives here.
  */
 export function StoryPlayer({ wrapped, isDemo, onClose }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotion() ?? false;
   const slides = wrapped.slides;
   const count = slides.length;
 
@@ -43,6 +87,18 @@ export function StoryPlayer({ wrapped, isDemo, onClose }: Props) {
   // A quiz waits for an answer before the clock starts.
   const waitingForAnswer = slide?.kind === 'quiz' && answers[slide.id] === undefined;
   const running = !userPaused && !holding && !hidden && !waitingForAnswer && !isLast;
+
+  const ctx = useMemo<SlideCtx>(
+    () => ({
+      wrapped,
+      name: (idx) => wrapped.participants[idx]?.name ?? '',
+      reduced,
+      running: !userPaused && !holding && !hidden,
+      answers,
+      onAnswer: (id, idx) => setAnswers((a) => ({ ...a, [id]: idx })),
+    }),
+    [wrapped, reduced, userPaused, holding, hidden, answers],
+  );
 
   const fill = useRef<HTMLSpanElement>(null);
   const elapsed = useRef(0);
@@ -62,7 +118,7 @@ export function StoryPlayer({ wrapped, isDemo, onClose }: Props) {
   // The clock. Progress is written straight to the DOM: no re-render per frame.
   useEffect(() => {
     if (!running || !slide) return;
-    const duration = slide.durationMs;
+    const duration = durationOf(slide);
     let last = performance.now();
     let frame = requestAnimationFrame(function tick(now) {
       // The first frame can carry a timestamp slightly older than `last`.
@@ -139,115 +195,124 @@ export function StoryPlayer({ wrapped, isDemo, onClose }: Props) {
 
   if (!slide) return null;
 
+  const fade: Variant = { opacity: 0 };
+  const variants: Variants = {
+    enter: reduced ? fade : transitionOf(slide.kind).initial,
+    center: { opacity: 1, scale: 1, x: 0, y: 0, clipPath: 'circle(150% at 50% 60%)' },
+    exit: reduced ? fade : transitionOf(slide.kind).exit,
+  };
+
   const paused = userPaused || holding;
   const chromeButton =
     'flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-black/25 text-xl text-white backdrop-blur-sm hover:bg-black/40';
 
   return (
-    <div
-      className="relative h-full touch-none overflow-hidden select-none"
-      onPointerDown={onPointerDown}
-      onPointerUp={(e) => endPress(e, false)}
-      onPointerCancel={(e) => endPress(e, true)}
-      onPointerLeave={(e) => endPress(e, true)}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      <AnimatePresence initial={false} mode="popLayout">
-        <motion.section
-          key={slide.id}
-          aria-roledescription="diapositiva"
-          aria-label={es.story.position(index + 1, count)}
-          className="absolute inset-0"
-          style={{ background: GRADIENTS[index % GRADIENTS.length] }}
-          initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 1.06 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
-          transition={{ duration: reduced ? 0.2 : 0.35, ease: 'easeOut' }}
-        >
-          <div className="absolute inset-0 bg-black/20" aria-hidden="true" />
-          <div className="relative h-full">
-            <SlideView
-              slide={slide}
-              wrapped={wrapped}
-              answers={answers}
-              onAnswer={(id, idx) => setAnswers((a) => ({ ...a, [id]: idx }))}
-            />
-          </div>
-        </motion.section>
-      </AnimatePresence>
-
-      {/* Screen readers get each slide as it arrives. */}
-      <p className="sr-only" aria-live="polite" aria-atomic="true">
-        {slide.title}. {slide.body}
-      </p>
-
-      {/* Chrome */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/45 to-transparent px-3 pt-3 pb-8">
-        <div
-          className="flex gap-1"
-          role="progressbar"
-          aria-label={es.story.position(index + 1, count)}
-          aria-valuemin={1}
-          aria-valuemax={count}
-          aria-valuenow={index + 1}
-        >
-          {slides.map((s, i) => (
-            <span key={s.id} className="h-1 flex-1 overflow-hidden rounded-full bg-white/30">
-              <span
-                ref={i === index ? fill : undefined}
-                className="block h-full origin-left rounded-full bg-white"
-                style={{ transform: `scaleX(${i < index ? 1 : 0})` }}
-              />
-            </span>
-          ))}
-        </div>
-
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="min-w-0 truncate text-sm font-semibold text-white/95">
-            {wrapped.chatName ?? es.app.name}
-            {isDemo && (
-              <span className="ml-2 rounded-full bg-white/25 px-2 py-0.5 text-xs">
-                {es.story.demo}
-              </span>
-            )}
-          </p>
-          <div className="pointer-events-auto flex gap-2" data-no-nav>
-            <button
-              type="button"
-              className={chromeButton}
-              aria-label={paused ? es.story.resume : es.story.pause}
-              onClick={() => setUserPaused((p) => !p)}
-            >
-              {paused ? <PlayIcon /> : <PauseIcon />}
-            </button>
-            <button
-              type="button"
-              className={chromeButton}
-              aria-label={es.story.close}
-              onClick={onClose}
-            >
-              <CloseIcon />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {isLast && (
-        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 px-6 pb-6" data-no-nav>
-          <Button
-            onClick={() => {
-              setAnswers({});
-              setUserPaused(false);
-              setIndex(0);
-            }}
+    <MotionConfig reducedMotion="user">
+      <div
+        className="relative h-full touch-none overflow-hidden select-none"
+        style={paletteVars(wrapped.theme.palette)}
+        onPointerDown={onPointerDown}
+        onPointerUp={(e) => endPress(e, false)}
+        onPointerCancel={(e) => endPress(e, true)}
+        onPointerLeave={(e) => endPress(e, true)}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.section
+            key={slide.id}
+            aria-roledescription="diapositiva"
+            aria-label={es.story.position(index + 1, count)}
+            className="absolute inset-0"
+            style={{ background: slideGradient(index) }}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: reduced ? 0.2 : 0.55, ease: [0.22, 1, 0.36, 1] }}
           >
-            {es.story.replay}
-          </Button>
-          <Button variant="ghost" onClick={onClose}>
-            {es.story.close}
-          </Button>
+            <Background kind={wrapped.theme.background} seed={wrapped.seed} />
+            <div className="relative h-full">
+              <SlideView slide={slide} ctx={ctx} />
+            </div>
+          </motion.section>
+        </AnimatePresence>
+
+        {/* Screen readers get each slide as it arrives. */}
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          {slide.title}. {slide.body}
+        </p>
+
+        {/* Chrome */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/45 to-transparent px-3 pt-3 pb-8">
+          <div
+            className="flex gap-1"
+            role="progressbar"
+            aria-label={es.story.position(index + 1, count)}
+            aria-valuemin={1}
+            aria-valuemax={count}
+            aria-valuenow={index + 1}
+          >
+            {slides.map((s, i) => (
+              <span key={s.id} className="h-1 flex-1 overflow-hidden rounded-full bg-white/30">
+                <span
+                  ref={i === index ? fill : undefined}
+                  className="block h-full origin-left rounded-full bg-white"
+                  style={{ transform: `scaleX(${i < index ? 1 : 0})` }}
+                />
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-sm font-semibold text-white/95">
+              {wrapped.chatName ?? es.app.name}
+              {isDemo && (
+                <span className="ml-2 rounded-full bg-white/25 px-2 py-0.5 text-xs">
+                  {es.story.demo}
+                </span>
+              )}
+            </p>
+            <div className="pointer-events-auto flex gap-2" data-no-nav>
+              <button
+                type="button"
+                className={chromeButton}
+                aria-label={paused ? es.story.resume : es.story.pause}
+                onClick={() => setUserPaused((p) => !p)}
+              >
+                {paused ? <PlayIcon /> : <PauseIcon />}
+              </button>
+              <button
+                type="button"
+                className={chromeButton}
+                aria-label={es.story.close}
+                onClick={onClose}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+
+        {isLast && (
+          <div
+            className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 px-6 pb-6"
+            data-no-nav
+          >
+            <Button
+              onClick={() => {
+                setAnswers({});
+                setUserPaused(false);
+                setIndex(0);
+              }}
+            >
+              {es.story.replay}
+            </Button>
+            <Button variant="ghost" onClick={onClose}>
+              {es.story.close}
+            </Button>
+          </div>
+        )}
+      </div>
+    </MotionConfig>
   );
 }

@@ -79,6 +79,15 @@ export const es = {
     start: 'Empezar',
     discard: 'Borrar y salir',
   },
+  /** Small labels next to the figures inside the slides. */
+  slides: {
+    messages: 'mensajes',
+    words: 'palabras',
+    activeDays: 'días con mensajes',
+    streakDays: 'días seguidos',
+    longestSilence: 'Silencio más largo, roto por',
+    conversationsStarted: 'conversaciones abiertas',
+  },
   story: {
     close: 'Borrar y salir',
     pause: 'Pausar',
