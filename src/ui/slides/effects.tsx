@@ -1,10 +1,14 @@
 import confetti from 'canvas-confetti';
-import { useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import { createRng } from '../../core';
 
+const DROPS = 16;
+
 /**
- * Rain of one emoji on a canvas. Positions and speeds come from the seed, so the same chat
- * always rains the same way. Not rendered at all with reduced motion.
+ * Rain of one emoji. Each drop is its own element animated only with `transform`, so the
+ * browser moves it on the compositor instead of redrawing the emoji on every frame (drawing
+ * emoji glyphs on a canvas 60 times a second is what made this slide stutter). Positions and
+ * speeds come from the seed. Not rendered at all with reduced motion.
  */
 export function EmojiRain({
   emoji,
@@ -15,61 +19,39 @@ export function EmojiRain({
   seed: string;
   running: boolean;
 }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  const runningRef = useRef(running);
-  runningRef.current = running;
-
-  useEffect(() => {
-    const canvas = ref.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
-
+  const drops = useMemo(() => {
     const rng = createRng(seed, 'fx:emoji-rain');
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    const drops = Array.from({ length: 34 }, () => ({
-      x: rng.next() * width,
-      y: -rng.next() * height * 1.2,
-      size: 18 + rng.next() * 30,
-      speed: 90 + rng.next() * 200,
-      spin: (rng.next() - 0.5) * 2,
-      angle: rng.next() * 6,
+    return Array.from({ length: DROPS }, (_, id) => ({
+      id,
+      left: (id + rng.next()) * (100 / DROPS),
+      size: 20 + rng.next() * 26,
+      duration: 4.5 + rng.next() * 4,
+      delay: rng.next() * 6,
+      spin: Math.round((rng.next() - 0.5) * 240),
     }));
-
-    let last = performance.now();
-    let frame = requestAnimationFrame(function tick(now) {
-      const dt = runningRef.current ? Math.min(0.05, Math.max(0, now - last) / 1000) : 0;
-      last = now;
-      ctx.clearRect(0, 0, width, height);
-      for (const d of drops) {
-        d.y += d.speed * dt;
-        d.angle += d.spin * dt;
-        if (d.y > height + 40) d.y = -40;
-        ctx.save();
-        ctx.translate(d.x, d.y);
-        ctx.rotate(d.angle);
-        ctx.font = `${d.size}px sans-serif`;
-        ctx.fillText(emoji, 0, 0);
-        ctx.restore();
-      }
-      frame = requestAnimationFrame(tick);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [emoji, seed]);
+  }, [seed]);
 
   return (
-    <canvas
-      ref={ref}
+    <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 h-full w-full opacity-60"
-    />
+      className="pointer-events-none absolute inset-0 overflow-hidden opacity-60"
+    >
+      {drops.map((d) => (
+        <span
+          key={d.id}
+          className="wr-anim absolute -top-16 leading-none will-change-transform"
+          style={{
+            left: `${d.left}%`,
+            fontSize: d.size,
+            ['--wr-spin' as string]: `${d.spin}deg`,
+            animation: `wr-fall ${d.duration}s linear ${-d.delay}s infinite`,
+            animationPlayState: running ? 'running' : 'paused',
+          }}
+        >
+          {emoji}
+        </span>
+      ))}
+    </div>
   );
 }
 

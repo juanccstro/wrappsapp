@@ -126,6 +126,7 @@ export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClo
   );
 
   const fill = useRef<HTMLSpanElement>(null);
+  const bars = useRef<HTMLDivElement>(null);
   const elapsed = useRef(0);
   const press = useRef<{ x: number; y: number; left: number; width: number; held: boolean } | null>(
     null,
@@ -137,7 +138,12 @@ export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClo
   // Restart the clock on every slide.
   useEffect(() => {
     elapsed.current = 0;
-    if (fill.current) fill.current.style.transform = 'scaleX(0)';
+    // The clock writes the current bar straight to the DOM, so React does not know its real
+    // width. Reset every bar here: full before the current slide, empty from it onwards.
+    // Otherwise a half-watched bar stays half full after going back.
+    bars.current?.querySelectorAll<HTMLElement>('[data-fill]').forEach((bar, i) => {
+      bar.style.transform = i < index ? 'scaleX(1)' : 'scaleX(0)';
+    });
   }, [index]);
 
   // The clock. Progress is written straight to the DOM: no re-render per frame.
@@ -212,8 +218,8 @@ export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClo
     let frame = requestAnimationFrame(function tick() {
       const beat = audio.beat();
       const pulse = beat ? Math.pow(1 - beat.phase, 3) : 0;
-      if (glow.current) glow.current.style.opacity = String(pulse * 0.16);
-      if (stage.current) stage.current.style.transform = 'scale(' + (1 + pulse * 0.012) + ')';
+      if (glow.current) glow.current.style.opacity = String(pulse * 0.2);
+      if (stage.current) stage.current.style.transform = 'scale(' + (1 + pulse * 0.016) + ')';
       frame = requestAnimationFrame(tick);
     });
     return () => cancelAnimationFrame(frame);
@@ -317,6 +323,7 @@ export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClo
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/45 to-transparent px-3 pt-3 pb-8">
           <div
             className="flex gap-1"
+            ref={bars}
             role="progressbar"
             aria-label={es.story.position(index + 1, count)}
             aria-valuemin={1}
@@ -327,6 +334,7 @@ export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClo
               <span key={s.id} className="h-1 flex-1 overflow-hidden rounded-full bg-white/30">
                 <span
                   ref={i === index ? fill : undefined}
+                  data-fill
                   className="block h-full origin-left rounded-full bg-white"
                   style={{ transform: `scaleX(${i < index ? 1 : 0})` }}
                 />

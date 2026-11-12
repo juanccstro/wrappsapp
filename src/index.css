@@ -115,6 +115,14 @@ button {
     transform: translate3d(400px, var(--wr-wave-y, 0), 0);
   }
 }
+@keyframes wr-fall {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  to {
+    transform: translate3d(0, 125vh, 0) rotate(var(--wr-spin, 90deg));
+  }
+}
 @keyframes wr-marquee {
   to {
     transform: translate3d(-50%, 0, 0);
