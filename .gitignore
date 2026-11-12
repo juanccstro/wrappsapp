@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+.vercel
+*.local
+.DS_Store
+# Exportaciones reales de chats: nunca al repo
+tests/fixtures/private/

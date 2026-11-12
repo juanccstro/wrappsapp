@@ -1,0 +1,14 @@
+@import 'tailwindcss';
+
+:root {
+  --wr-bg: #0d0221;
+  --wr-fg: #ffffff;
+  --wr-accent: #ff3d9a;
+}
+
+body {
+  margin: 0;
+  background: var(--wr-bg);
+  color: var(--wr-fg);
+  font-family: system-ui, sans-serif;
+}
