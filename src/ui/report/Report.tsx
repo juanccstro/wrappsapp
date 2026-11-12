@@ -199,9 +199,12 @@ function PersonSheet({
         {rows
           .filter((row): row is [string, string] => row[1] !== null)
           .map(([label, value]) => (
-            <div key={label} className="rounded-xl bg-white/8 px-2 py-1.5">
-              <dd className="text-sm leading-tight font-bold break-words">{value}</dd>
-              <dt className="mt-0.5 text-[0.65rem] leading-tight text-white/70">{label}</dt>
+            <div
+              key={label}
+              className="flex flex-col justify-between rounded-xl bg-white/8 px-2 py-1.5"
+            >
+              <dt className="text-[0.65rem] leading-tight text-white/70">{label}</dt>
+              <dd className="mt-0.5 text-sm leading-tight font-bold break-words">{value}</dd>
             </div>
           ))}
       </dl>
@@ -237,13 +240,13 @@ export function Report({ wrapped, analytics: a, onBack, onClose }: Props) {
   if (a.longestSilence) {
     records.push([
       t.records.silence,
-      `${formatDuration(a.longestSilence.minutes)} · ${name(a.longestSilence.brokenBy)}`,
+      `${formatDuration(a.longestSilence.minutes)}, ${t.records.brokenBy(name(a.longestSilence.brokenBy))}`,
     ]);
   }
   if (a.laughs.longest) {
     records.push([
       t.records.laugh,
-      `${a.laughs.longest.length} ${t.records.letters} · ${name(a.laughs.longest.senderIdx)}`,
+      `${a.laughs.longest.length} ${t.records.letters}, ${t.records.by(name(a.laughs.longest.senderIdx))}`,
     ]);
   }
   records.push([t.records.peakHour, `${a.peakHour}:00`]);

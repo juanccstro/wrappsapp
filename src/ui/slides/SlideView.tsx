@@ -467,7 +467,10 @@ function StreakSilence({ slide, ctx }: Of<'streakSilence'>) {
           <Avatar idx={silence.brokenBy} name={ctx.name(silence.brokenBy)} size={48} />
           <div>
             <p className="text-xs text-white/80">{t.longestSilence}</p>
-            <p className="font-display text-lg font-black">{formatDuration(silence.minutes)}</p>
+            <p className="font-display text-lg leading-tight font-black">
+              {formatDuration(silence.minutes)}
+            </p>
+            <p className="text-xs text-white/80">{t.brokenBy(ctx.name(silence.brokenBy))}</p>
           </div>
         </Rise>
       )}
@@ -617,11 +620,14 @@ function Summary({ slide, ctx }: Of<'summary'>) {
               </div>
               <dl className="grid grid-cols-3 gap-1.5">
                 {slide.data.highlights.slice(0, 6).map((h) => (
-                  <div key={h.label} className="rounded-xl bg-white/12 px-2 py-1.5">
-                    <dd className="font-display text-[0.8rem] leading-tight font-black">
+                  <div
+                    key={h.label}
+                    className="flex flex-col justify-between rounded-xl bg-white/12 px-2 py-1.5"
+                  >
+                    <dt className="text-[0.65rem] leading-tight text-white/75">{h.label}</dt>
+                    <dd className="mt-0.5 font-display text-[0.8rem] leading-tight font-black">
                       {h.value}
                     </dd>
-                    <dt className="text-[0.65rem] text-white/75">{h.label}</dt>
                   </div>
                 ))}
               </dl>

@@ -131,7 +131,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeTexts> = {
       '{nightCount|num} mensajes entre las 00:00 y las 06:00. {name} vigila.',
       'Si son las 3 a. m. y suena el móvil, es {name}.',
     ],
-    stat: { label: 'De madrugada', value: '{nightPct}%' },
+    stat: { label: 'Mensajes de madrugada', value: '{nightPct}%' },
   },
   podcaster: {
     label: 'Podcaster',
@@ -365,7 +365,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeTexts> = {
       'Mientras los demás se despiertan, {name} ya va por el segundo mensaje.',
       'Si hay un mensaje a las 7, es de {name}.',
     ],
-    stat: { label: 'Antes de las 9', value: '{earlyPct}%' },
+    stat: { label: 'Mensajes antes de las 9', value: '{earlyPct}%' },
   },
   regretful: {
     label: 'Marcha atrás',
@@ -494,7 +494,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeTexts> = {
       },
       '{name} mantiene {chat} en marcha.',
     ],
-    stat: { label: 'Del total', value: '{pct}%' },
+    stat: { label: 'Peso en el chat', value: '{pct}%' },
   },
   telegraph: {
     label: 'Telegrama',
@@ -597,5 +597,5 @@ export const CARD_STATS: readonly { label: string; value: string }[] = [
   { label: 'Suele contestar en', value: '{replyTime}' },
   { label: 'Habla más con', value: '{favorite}' },
   { label: 'Días activos', value: '{activeDays|num}' },
-  { label: 'Del total', value: '{pct}%' },
+  { label: 'Peso en el chat', value: '{pct}%' },
 ];

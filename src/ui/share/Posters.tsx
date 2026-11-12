@@ -91,6 +91,10 @@ const tile: CSSProperties = {
   background: 'rgba(0,0,0,0.32)',
   borderRadius: 40,
   padding: '32px 36px',
+  // Label on top, value pinned to the bottom so values line up across a row.
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
 };
 
 export function SummaryPoster({
@@ -111,8 +115,10 @@ export function SummaryPoster({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 72 }}>
         {slide.data.highlights.slice(0, 6).map((h) => (
           <div key={h.label} style={tile}>
-            <p style={{ ...display, margin: 0, fontSize: 60, lineHeight: 1.05 }}>{h.value}</p>
-            <p style={{ margin: '10px 0 0', fontSize: 32, opacity: 0.85 }}>{h.label}</p>
+            <p style={{ margin: 0, fontSize: 32, opacity: 0.85 }}>{h.label}</p>
+            <p style={{ ...display, margin: '10px 0 0', fontSize: 60, lineHeight: 1.05 }}>
+              {h.value}
+            </p>
           </div>
         ))}
       </div>
@@ -168,8 +174,10 @@ export function PersonPoster({ wrapped, card }: { wrapped: WrappedResult; card: 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginTop: 72 }}>
         {card.stats.map((stat) => (
           <div key={stat.label} style={{ ...tile, padding: '28px 20px', textAlign: 'center' }}>
-            <p style={{ ...display, margin: 0, fontSize: 44, lineHeight: 1.1 }}>{stat.value}</p>
-            <p style={{ margin: '10px 0 0', fontSize: 28, opacity: 0.85 }}>{stat.label}</p>
+            <p style={{ margin: 0, fontSize: 28, lineHeight: 1.2, opacity: 0.85 }}>{stat.label}</p>
+            <p style={{ ...display, margin: '10px 0 0', fontSize: 44, lineHeight: 1.1 }}>
+              {stat.value}
+            </p>
           </div>
         ))}
       </div>

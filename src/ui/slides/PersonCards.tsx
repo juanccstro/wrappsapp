@@ -64,11 +64,15 @@ export function PersonCardView({ card, reduced }: { card: PersonCard; reduced: b
 
           <dl className="grid grid-cols-3 gap-2">
             {card.stats.map((stat) => (
-              <div key={stat.label} className="rounded-xl bg-white/12 px-2 py-2 text-center">
-                <dd className="font-display text-[0.8rem] leading-tight font-black text-balance">
+              // The label leads into the value: «Habla más con» → «Vera».
+              <div
+                key={stat.label}
+                className="flex flex-col justify-between rounded-xl bg-white/12 px-2 py-2 text-center"
+              >
+                <dt className="text-[0.65rem] leading-tight text-white/75">{stat.label}</dt>
+                <dd className="mt-0.5 font-display text-[0.8rem] leading-tight font-black text-balance">
                   {stat.value}
                 </dd>
-                <dt className="mt-0.5 text-[0.65rem] leading-tight text-white/75">{stat.label}</dt>
               </div>
             ))}
           </dl>
@@ -182,8 +186,10 @@ export function PersonCards({ cards, ctx }: { cards: PersonCard[]; ctx: SlideCtx
         >
           <ShareIcon />
           {/* Narrow phones show just "Compartir"; the accessible name stays complete. */}
-          {es.share.share}
-          <span className="max-[380px]:sr-only">{es.share.shareCardRest}</span>
+          <span>
+            {es.share.share}
+            <span className="max-[380px]:sr-only">{es.share.shareCardRest}</span>
+          </span>
         </button>
         <button
           type="button"
