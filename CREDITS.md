@@ -2,8 +2,9 @@
 
 ## Música
 
-Todavía no hay pistas: la música es un bucle sintetizado en el navegador con Web Audio
-(bombo, charles y acordes a 120 BPM), generado por el propio código de Wrappsapp.
+Todavía no hay pistas: la música se genera en el navegador con Web Audio (acordes suaves,
+bombo, charles, bajo y un arpegio con eco a 100 BPM) y cambia de escena según la diapositiva.
+La compone el propio código de Wrappsapp a partir de la semilla del chat.
 
 Cuando se añadan pistas a `public/audio/`, se listan aquí con su autor, licencia y enlace:
 

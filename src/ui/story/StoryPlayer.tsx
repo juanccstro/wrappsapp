@@ -8,6 +8,7 @@ import {
 } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import type { AudioPlayer } from '../../audio/player';
+import { sceneFor } from '../../audio/scenes';
 import type { Slide, SlideKind, WrappedResult } from '../../core';
 import { es } from '../../i18n/es';
 import { Button } from '../components/Shell';
@@ -191,6 +192,11 @@ export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClo
     return () => audio.stop();
   }, [audio, wrapped.seed, wrapped.vibe.id]);
   useEffect(() => audio.setMuted(muted), [audio, muted]);
+  // The music changes with the story: each slide has its scene.
+  const slideKind = slide?.kind;
+  useEffect(() => {
+    if (slideKind) audio.setScene(sceneFor(slideKind, index));
+  }, [audio, slideKind, index]);
   useEffect(() => {
     if (hidden) audio.suspend();
     else audio.resume();
@@ -272,31 +278,35 @@ export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClo
         onPointerLeave={(e) => endPress(e, true)}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <AnimatePresence initial={false} mode="popLayout">
-          <motion.section
-            key={slide.id}
-            aria-roledescription="diapositiva"
-            aria-label={es.story.position(index + 1, count)}
-            className="absolute inset-0"
-            style={{ background: slideGradient(index) }}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: reduced ? 0.2 : 0.55, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Background kind={wrapped.theme.background} seed={wrapped.seed} />
-            <div
-              ref={glow}
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 opacity-0"
-              style={{ background: 'radial-gradient(circle at 50% 55%, white, transparent 65%)' }}
-            />
-            <div ref={stage} className="relative h-full will-change-transform">
-              <SlideView slide={slide} ctx={ctx} />
-            </div>
-          </motion.section>
-        </AnimatePresence>
+        {/* Everything that follows the beat lives outside the slides: a ref inside a slide
+            is cleared when the previous slide unmounts. */}
+        <div ref={stage} className="absolute inset-0 will-change-transform">
+          <AnimatePresence initial={false} mode="popLayout">
+            <motion.section
+              key={slide.id}
+              aria-roledescription="diapositiva"
+              aria-label={es.story.position(index + 1, count)}
+              className="absolute inset-0"
+              style={{ background: slideGradient(index) }}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: reduced ? 0.2 : 0.55, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Background kind={wrapped.theme.background} seed={wrapped.seed} />
+              <div className="relative h-full">
+                <SlideView slide={slide} ctx={ctx} />
+              </div>
+            </motion.section>
+          </AnimatePresence>
+        </div>
+        <div
+          ref={glow}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-0"
+          style={{ background: 'radial-gradient(circle at 50% 55%, white, transparent 65%)' }}
+        />
 
         {/* Screen readers get each slide as it arrives. */}
         <p className="sr-only" aria-live="polite" aria-atomic="true">

@@ -1,11 +1,12 @@
 import { motion, useReducedMotion } from 'framer-motion';
+import logo from '../../assets/logo.png';
 import { es } from '../../i18n/es';
 import { Button } from '../components/Shell';
 import { LockIcon } from '../components/icons';
 
-type Props = { onStart: () => void; onDemo: () => void; onCredits: () => void };
+type Props = { onStart: () => void; onDemo: () => void };
 
-export function Landing({ onStart, onDemo, onCredits }: Props) {
+export function Landing({ onStart, onDemo }: Props) {
   const reduced = useReducedMotion();
   const rise = (delay: number) =>
     reduced
@@ -26,12 +27,10 @@ export function Landing({ onStart, onDemo, onCredits }: Props) {
       </div>
 
       <div className="relative flex flex-1 flex-col justify-center gap-6">
-        <motion.p
-          {...rise(0)}
-          className="font-display text-sm font-semibold tracking-wide text-[var(--wr-b)]"
-        >
-          {es.app.name}
-        </motion.p>
+        <motion.div {...rise(0)} className="flex items-center gap-3">
+          <img src={logo} alt="" width={56} height={56} className="h-14 w-14" />
+          <p className="font-display text-xl font-black tracking-tight">{es.app.name}</p>
+        </motion.div>
 
         <h1 className="font-display text-[2.6rem] leading-[1.02] font-black tracking-tight">
           {es.landing.title.map((line, i) => (
@@ -71,14 +70,7 @@ export function Landing({ onStart, onDemo, onCredits }: Props) {
         </motion.div>
       </div>
 
-      <footer className="relative flex flex-col items-center gap-2 pt-6 text-center text-xs text-white/60">
-        <button
-          type="button"
-          onClick={onCredits}
-          className="min-h-8 cursor-pointer font-semibold text-white/80 underline underline-offset-4 hover:text-white"
-        >
-          {es.landing.credits}
-        </button>
+      <footer className="relative pt-6 text-center text-xs text-white/60">
         {es.app.disclaimer}
       </footer>
     </main>

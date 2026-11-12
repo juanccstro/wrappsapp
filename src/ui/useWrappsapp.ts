@@ -5,7 +5,6 @@ import { SessionError, type ChatSummary, type SessionErrorCode } from '../worker
 
 export type Screen =
   | { name: 'landing' }
-  | { name: 'credits' }
   | { name: 'upload'; error: SessionErrorCode | null }
   | { name: 'loading' }
   | { name: 'period'; summary: ChatSummary }
@@ -77,12 +76,11 @@ export function useWrappsapp() {
   }, [start]);
 
   const goUpload = useCallback(() => setScreen({ name: 'upload', error: null }), []);
-  const goCredits = useCallback(() => setScreen({ name: 'credits' }), []);
 
   const reset = useCallback(() => {
     discard();
     setScreen({ name: 'landing' });
   }, [discard]);
 
-  return { screen, goUpload, goCredits, loadFile, loadDemo, start, reset };
+  return { screen, goUpload, loadFile, loadDemo, start, reset };
 }

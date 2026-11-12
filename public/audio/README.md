@@ -1,7 +1,8 @@
 # Música
 
 Deja aquí las pistas (`.mp3` u `.ogg`) y descríbelas en `tracks.json`. Mientras el archivo
-esté vacío (`[]`), Wrappsapp suena con un bucle sintetizado en el navegador.
+esté vacío (`[]`), Wrappsapp suena con música generada en el navegador, que cambia de
+escena según la diapositiva.
 
 Solo pistas libres de derechos con licencia compatible (Pixabay Music, CC0, YouTube Audio
 Library…). Nada de canciones comerciales.
@@ -26,4 +27,4 @@ Library…). Nada de canciones comerciales.
   `madrugada`, `memes`, `risas`, `debate`, `rayo`, `caos`, `pocos`, `familia`. Una lista vacía
   significa "vale para cualquiera".
 
-Cada pista aparece sola en la pantalla de créditos. Añádela también a `CREDITS.md`.
+Añade cada pista a `CREDITS.md` con su autor, licencia y enlace.

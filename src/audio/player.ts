@@ -31,6 +31,11 @@ export type AudioPlayer = {
   setMuted(muted: boolean): void;
   /** Relative level (0–1) reached over some seconds: e.g. duck the music on the last slide. */
   setLevel(level: number, seconds: number): void;
+  /**
+   * Moves the generated music to another scene (see sceneFor). Licensed tracks play as
+   * they are, so this does nothing for them.
+   */
+  setScene(index: number): void;
   /** Tab hidden / visible again. */
   suspend(): void;
   resume(): void;
@@ -49,6 +54,7 @@ export function createAudioPlayer(): AudioPlayer {
   let current: Track | null = null;
   let muted = false;
   let level = 1;
+  let scene = 0;
   /** Each start/stop invalidates whatever the previous one was still loading. */
   let generation = 0;
 
@@ -111,6 +117,7 @@ export function createAudioPlayer(): AudioPlayer {
           current = null;
           const audio = getContext();
           synth = createSynthLoop(audio, seed);
+          synth.setScene(scene);
           if (master) synth.output.connect(master);
           ramp(FADE_IN_S);
         });
@@ -122,6 +129,7 @@ export function createAudioPlayer(): AudioPlayer {
       const audio = getContext();
       void audio.resume();
       synth = createSynthLoop(audio, seed);
+      synth.setScene(scene);
       if (master) synth.output.connect(master);
       ramp(FADE_IN_S);
     },
@@ -134,6 +142,11 @@ export function createAudioPlayer(): AudioPlayer {
     setLevel(next, seconds) {
       level = next;
       ramp(seconds);
+    },
+
+    setScene(index) {
+      scene = index;
+      synth?.setScene(index);
     },
 
     suspend() {

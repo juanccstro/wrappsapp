@@ -16,7 +16,6 @@ export const es = {
       'Convierte la exportación de un chat en un resumen animado: quién escribe más, a qué hora, vuestras risas y un título para cada persona.',
     start: 'Haz tu Wrapped',
     demo: 'Ver demo',
-    credits: 'Créditos',
     privacyDetail: 'Todo se calcula en tu navegador. No hay servidor ni subida de archivos.',
     consent: 'Úsalo con chats en los que todo el mundo esté de acuerdo en verlo.',
   },
@@ -79,19 +78,6 @@ export const es = {
     messages: (n: string) => `${n} mensajes`,
     start: 'Empezar',
     discard: 'Borrar y salir',
-  },
-  credits: {
-    title: 'Créditos',
-    music: 'Música',
-    loading: 'Cargando…',
-    synth:
-      'Todavía no hay pistas con licencia: la música es un bucle sintetizado en tu navegador, generado por Wrappsapp.',
-    source: 'Fuente',
-    fonts: 'Tipografías',
-    fontsDetail: 'Unbounded y Space Grotesk, ambas con licencia SIL Open Font License 1.1.',
-    software: 'Hecho con',
-    softwareDetail:
-      'React, Vite, Tailwind CSS, Framer Motion, d3-force, Howler.js, JSZip y canvas-confetti.',
   },
   share: {
     share: 'Compartir',
