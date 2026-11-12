@@ -59,6 +59,10 @@ Es un sitio estático: sirve cualquier alojamiento que publique `dist/`. Para Ve
 importar el repositorio; `vercel.json` ya incluye las cabeceras de seguridad, entre ellas una
 Content Security Policy que solo permite conexiones al propio sitio.
 
+La vista previa al compartir el enlace (título, descripción e imagen) usa el dominio de
+producción de Vercel. Con un dominio propio, define la variable de entorno `SITE_URL` en el
+proyecto. La imagen se regenera con `npm run og`.
+
 ## Privacidad
 
 - Ningún mensaje se envía a ningún sitio: no hay backend, analítica de contenido ni cookies.

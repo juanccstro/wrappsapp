@@ -3,14 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Wrappsapp · El Wrapped de tu grupo</title>
     <meta
       name="description"
-      content="El Wrapped de tu grupo. Tus mensajes no salen de tu dispositivo."
+      content="Convierte la exportación de un chat en un resumen animado: quién escribe más, vuestras risas y un título para cada persona. Tus mensajes no salen de tu dispositivo."
     />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#12062b" />
-    <title>Wrappsapp</title>
+
+    <!-- Link preview (WhatsApp, Telegram, X, Discord…). __SITE_URL__ is filled in at build
+         time (see vite.config.ts): previews need the absolute address of the image. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Wrappsapp" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:url" content="__SITE_URL__/" />
+    <meta property="og:title" content="Wrappsapp · El Wrapped de tu grupo" />
+    <meta
+      property="og:description"
+      content="Convierte un chat en un resumen animado: quién escribe más, vuestras risas y un título para cada persona. Tus mensajes no salen de tu dispositivo."
+    />
+    <meta property="og:image" content="__SITE_URL__/og-image.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Wrappsapp: el Wrapped de tu grupo. Tus mensajes no salen de tu dispositivo."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Wrappsapp · El Wrapped de tu grupo" />
+    <meta
+      name="twitter:description"
+      content="Convierte un chat en un resumen animado. Tus mensajes no salen de tu dispositivo."
+    />
+    <meta name="twitter:image" content="__SITE_URL__/og-image.jpg" />
   </head>
   <body>
     <div id="root"></div>
