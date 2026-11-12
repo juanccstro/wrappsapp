@@ -19,6 +19,7 @@ import { Background } from '../backgrounds/Background';
 import type { SlideCtx } from '../slides/common';
 import { CARD_MS } from '../slides/PersonCards';
 import { SlideView } from '../slides/SlideView';
+import { slideDurationMs } from '../slides/timing';
 import { useShare } from '../share/useShare';
 import { paletteVars, slideGradient } from '../theme/palettes';
 
@@ -58,7 +59,7 @@ const durationOf = (slide: Slide) =>
     ? Math.max(slide.durationMs, slide.data.cards.length * CARD_MS + 1200)
     : slide.kind === 'quiz'
       ? QUIZ_MS
-      : slide.durationMs;
+      : slideDurationMs(slide);
 
 type Motion = { initial: TargetAndTransition; exit: TargetAndTransition };
 

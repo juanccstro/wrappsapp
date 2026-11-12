@@ -124,14 +124,18 @@ export function CountUp({
   return <span className={`tabular-nums ${className}`}>{formatNumber(shown)}</span>;
 }
 
-/** Steps 0, 1, 2… up to count - 1 while the story is running. */
-export function useTicker(count: number, stepMs: number, ctx: SlideCtx): number {
+/**
+ * Steps 0, 1, 2… up to count - 1 while the story is running. `startDelayMs` holds the first
+ * step a little longer (e.g. until the title has appeared).
+ */
+export function useTicker(count: number, stepMs: number, ctx: SlideCtx, startDelayMs = 0): number {
   const [step, setStep] = useState(ctx.reduced ? Math.max(0, count - 1) : 0);
   useEffect(() => {
     if (!ctx.running || ctx.reduced || step >= count - 1) return;
-    const timer = setTimeout(() => setStep((s) => Math.min(count - 1, s + 1)), stepMs);
+    const wait = step === 0 ? stepMs + startDelayMs : stepMs;
+    const timer = setTimeout(() => setStep((s) => Math.min(count - 1, s + 1)), wait);
     return () => clearTimeout(timer);
-  }, [step, count, stepMs, ctx.running, ctx.reduced]);
+  }, [step, count, stepMs, startDelayMs, ctx.running, ctx.reduced]);
   return step;
 }
 

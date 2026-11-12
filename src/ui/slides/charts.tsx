@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 import type { Ranked } from '../../core';
 import { formatNumber } from '../../core/templates/es/format';
 import { Avatar, useTicker, type SlideCtx } from './common';
+import { RACE_START_MS, raceStepMs } from './timing';
 
 const TAU = Math.PI * 2;
 
@@ -83,7 +84,8 @@ export function BarRace({
   months: { month: string; label: string; perPerson: number[] }[];
   ctx: SlideCtx;
 }) {
-  const step = useTicker(months.length, Math.max(280, 5200 / months.length), ctx);
+  // Its timing is mirrored in timing.ts, which keeps the slide on screen until it ends.
+  const step = useTicker(months.length, raceStepMs(months.length), ctx, RACE_START_MS);
 
   const frames = useMemo(() => {
     const totals: number[] = [];
