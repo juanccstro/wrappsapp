@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { Ranked, WrappedResult } from '../../core';
 import { formatNumber } from '../../core/templates/es/format';
+import type { ShareTarget } from '../share/share';
 
 /** What every slide gets from the player. */
 export type SlideCtx = {
@@ -13,6 +14,10 @@ export type SlideCtx = {
   running: boolean;
   answers: Record<string, number>;
   onAnswer: (slideId: string, idx: number) => void;
+  /** Exports a card as an image and opens the share sheet (or downloads it). */
+  onShare: (target: ShareTarget) => void;
+  /** An image is being prepared. */
+  sharing: boolean;
 };
 
 export function Layout({ children, className = '' }: { children: ReactNode; className?: string }) {

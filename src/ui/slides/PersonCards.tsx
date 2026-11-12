@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRef, type PointerEvent } from 'react';
 import type { PersonCard } from '../../core';
+import { es } from '../../i18n/es';
+import { ShareIcon } from '../components/icons';
 import { Avatar, useTicker, type SlideCtx } from './common';
 
 /** Time each card stays on screen. The player stretches the slide to fit them all. */
@@ -116,7 +118,18 @@ export function PersonCards({ cards, ctx }: { cards: PersonCard[]; ctx: SlideCtx
           <PersonCardView card={card} reduced={false} />
         </motion.div>
       </AnimatePresence>
-      <div className="mt-4 flex justify-center gap-1.5" aria-hidden="true">
+      <div className="mt-4 flex justify-center" data-no-nav>
+        <button
+          type="button"
+          disabled={ctx.sharing}
+          onClick={() => ctx.onShare({ type: 'person', idx: card.idx })}
+          className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-black/35 px-5 text-sm font-bold hover:bg-black/50 disabled:opacity-60"
+        >
+          <ShareIcon />
+          {es.share.shareCard}
+        </button>
+      </div>
+      <div className="mt-3 flex justify-center gap-1.5" aria-hidden="true">
         {cards.map((c, i) => (
           <span
             key={c.idx}

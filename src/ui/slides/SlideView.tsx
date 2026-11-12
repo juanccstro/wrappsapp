@@ -528,7 +528,7 @@ function Summary({ slide, ctx }: Of<'summary'>) {
   }, [ctx.reduced]);
 
   return (
-    <Layout className="!justify-start !gap-3 !pt-24 !pb-36">
+    <Layout className="!justify-start !gap-3 !pt-24 !pb-56">
       <Title text={slide.title} className="!text-2xl" />
       <Rise delay={0.4}>
         <div

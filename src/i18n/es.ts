@@ -93,6 +93,14 @@ export const es = {
     softwareDetail:
       'React, Vite, Tailwind CSS, Framer Motion, d3-force, Howler.js, JSZip y canvas-confetti.',
   },
+  share: {
+    share: 'Compartir',
+    download: 'Descargar imagen',
+    shareCard: 'Compartir esta tarjeta',
+    working: 'Preparando la imagen…',
+    error: 'No se ha podido crear la imagen. Vuelve a intentarlo.',
+    footer: 'Hecho con Wrappsapp · Los mensajes no salieron del dispositivo',
+  },
   /** Small labels next to the figures inside the slides. */
   slides: {
     messages: 'mensajes',

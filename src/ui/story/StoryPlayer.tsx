@@ -11,12 +11,21 @@ import type { AudioPlayer } from '../../audio/player';
 import type { Slide, SlideKind, WrappedResult } from '../../core';
 import { es } from '../../i18n/es';
 import { Button } from '../components/Shell';
-import { CloseIcon, PauseIcon, PlayIcon, SoundIcon, SoundOffIcon } from '../components/icons';
+import {
+  CloseIcon,
+  DownloadIcon,
+  PauseIcon,
+  PlayIcon,
+  ShareIcon,
+  SoundIcon,
+  SoundOffIcon,
+} from '../components/icons';
 import { clampIndex, classifyGesture, HOLD_MS } from './gestures';
 import { Background } from '../backgrounds/Background';
 import type { SlideCtx } from '../slides/common';
 import { CARD_MS } from '../slides/PersonCards';
 import { SlideView } from '../slides/SlideView';
+import { useShare } from '../share/useShare';
 import { paletteVars, slideGradient } from '../theme/palettes';
 
 type Props = {
@@ -92,6 +101,15 @@ export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClo
   const waitingForAnswer = slide?.kind === 'quiz' && answers[slide.id] === undefined;
   const running = !userPaused && !holding && !hidden && !waitingForAnswer && !isLast;
 
+  const share = useShare(wrapped);
+  const { run: runShare, status: shareStatus, make: makePoster } = share;
+
+  // Development only: lets the poster be inspected without triggering a download.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    Object.assign(window, { __wrappsappPoster: makePoster });
+  }, [makePoster]);
+
   const ctx = useMemo<SlideCtx>(
     () => ({
       wrapped,
@@ -100,8 +118,10 @@ export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClo
       running: !userPaused && !holding && !hidden,
       answers,
       onAnswer: (id, idx) => setAnswers((a) => ({ ...a, [id]: idx })),
+      onShare: (target) => void runShare(target, 'share'),
+      sharing: shareStatus === 'working',
     }),
-    [wrapped, reduced, userPaused, holding, hidden, answers],
+    [wrapped, reduced, userPaused, holding, hidden, answers, runShare, shareStatus],
   );
 
   const fill = useRef<HTMLSpanElement>(null);
@@ -349,19 +369,50 @@ export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClo
             data-no-nav
           >
             <Button
-              onClick={() => {
-                setAnswers({});
-                setUserPaused(false);
-                setIndex(0);
-              }}
+              disabled={shareStatus === 'working'}
+              onClick={() => void runShare({ type: 'summary' }, 'share')}
             >
-              {es.story.replay}
+              <ShareIcon />
+              {es.share.share}
             </Button>
-            <Button variant="ghost" onClick={onClose}>
-              {es.story.close}
+            <Button
+              variant="secondary"
+              disabled={shareStatus === 'working'}
+              onClick={() => void runShare({ type: 'summary' }, 'download')}
+            >
+              <DownloadIcon />
+              {es.share.download}
             </Button>
+            <div className="flex justify-center gap-6">
+              <Button
+                variant="ghost"
+                className="!px-2"
+                onClick={() => {
+                  setAnswers({});
+                  setUserPaused(false);
+                  setIndex(0);
+                }}
+              >
+                {es.story.replay}
+              </Button>
+              <Button variant="ghost" className="!px-2" onClick={onClose}>
+                {es.story.close}
+              </Button>
+            </div>
           </div>
         )}
+        <p
+          role="status"
+          aria-live="polite"
+          className={`pointer-events-none absolute inset-x-6 bottom-56 z-20 rounded-2xl bg-black/70 px-4 py-2 text-center text-sm font-semibold transition-opacity ${shareStatus === 'idle' ? 'opacity-0' : 'opacity-100'}`}
+        >
+          {shareStatus === 'working'
+            ? es.share.working
+            : shareStatus === 'error'
+              ? es.share.error
+              : ''}
+        </p>
+        {share.poster}
       </div>
     </MotionConfig>
   );
