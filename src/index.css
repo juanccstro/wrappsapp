@@ -2,6 +2,9 @@
 @import '@fontsource-variable/space-grotesk';
 @import 'tailwindcss';
 
+/* Short phones (iPhone SE, small Androids, landscape-ish windows). */
+@custom-variant short (@media (max-height: 720px));
+
 @theme {
   --font-display: 'Unbounded Variable', system-ui, sans-serif;
   --font-sans: 'Space Grotesk Variable', system-ui, sans-serif;
@@ -62,11 +65,14 @@ button {
     transform: translate3d(-14%, -6%, 0) scale(0.9);
   }
 }
+/* Soft edges come from a static radial mask, not from `filter: blur()`: a big blur on a moving
+   element is redrawn every frame, which is the slowest thing a phone can be asked to do. */
 .wr-blob {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(70px);
   opacity: 0.55;
+  -webkit-mask-image: radial-gradient(closest-side, black 15%, transparent);
+  mask-image: radial-gradient(closest-side, black 15%, transparent);
   will-change: transform;
 }
 .wr-blob-a {
@@ -156,5 +162,31 @@ button {
   .wr-eq-bar,
   .wr-anim {
     animation: none !important;
+  }
+}
+
+/* Quiz feedback and celebration rings (replace the old canvas confetti). */
+@keyframes wr-burst {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+@keyframes wr-shake {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  20%,
+  60% {
+    transform: translate3d(-9px, 0, 0);
+  }
+  40%,
+  80% {
+    transform: translate3d(9px, 0, 0);
   }
 }

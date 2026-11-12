@@ -1,12 +1,12 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { useRef, type PointerEvent } from 'react';
+import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
+import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import type { PersonCard } from '../../core';
 import { es } from '../../i18n/es';
-import { ShareIcon } from '../components/icons';
-import { Avatar, useTicker, type SlideCtx } from './common';
+import { ChevronIcon, ShareIcon } from '../components/icons';
+import { Avatar, type SlideCtx } from './common';
 
 /** Time each card stays on screen. The player stretches the slide to fit them all. */
-export const CARD_MS = 3600;
+export const CARD_MS = 5200;
 
 /**
  * One collectible card: 3D entrance, tilt that follows the pointer and a holographic sheen.
@@ -78,11 +78,33 @@ export function PersonCardView({ card, reduced }: { card: PersonCard; reduced: b
   );
 }
 
-/** The parade: one card after another. */
-export function PersonCards({ cards, ctx }: { cards: PersonCard[]; ctx: SlideCtx }) {
-  // With reduced motion the ticker starts at the end, so show a plain list instead.
-  const step = useTicker(cards.length, CARD_MS, ctx);
+/** A swipe this long (or this fast) changes card. */
+const SWIPE_PX = 60;
+const SWIPE_SPEED = 400;
 
+/**
+ * The parade: one card after another, on their own, and the user can also swipe (or tap the
+ * arrows and dots) to go back and forth. Swiping never touches the story clock: the slide
+ * lasts the same either way, long enough to see every card.
+ */
+export function PersonCards({ cards, ctx }: { cards: PersonCard[]; ctx: SlideCtx }) {
+  const count = cards.length;
+  // [current card, direction of the last change] so the cards slide the right way.
+  const [[step, dir], setStep] = useState<[number, number]>([0, 1]);
+
+  const goTo = (next: number) => {
+    const clamped = Math.min(count - 1, Math.max(0, next));
+    if (clamped !== step) setStep([clamped, clamped > step ? 1 : -1]);
+  };
+
+  // Auto-advance. Restarts on every change, so a card picked by hand gets its full time.
+  useEffect(() => {
+    if (!ctx.running || ctx.reduced || step >= count - 1) return;
+    const timer = setTimeout(() => setStep(([s]) => [Math.min(count - 1, s + 1), 1]), CARD_MS);
+    return () => clearTimeout(timer);
+  }, [step, count, ctx.running, ctx.reduced]);
+
+  // With reduced motion: a plain list, nothing moves.
   if (ctx.reduced) {
     return (
       <ul className="flex flex-col gap-2 overflow-y-auto" data-no-nav>
@@ -104,37 +126,90 @@ export function PersonCards({ cards, ctx }: { cards: PersonCard[]; ctx: SlideCtx
   const card = cards[step];
   if (!card) return null;
 
+  const onDragEnd = (_: unknown, info: PanInfo) => {
+    if (info.offset.x < -SWIPE_PX || info.velocity.x < -SWIPE_SPEED) goTo(step + 1);
+    else if (info.offset.x > SWIPE_PX || info.velocity.x > SWIPE_SPEED) goTo(step - 1);
+  };
+
+  const arrow =
+    'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/30 text-lg text-white transition-opacity hover:bg-black/45 disabled:pointer-events-none disabled:opacity-0';
+
   return (
-    <div>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={card.idx}
-          initial={{ opacity: 0, rotateY: 80, scale: 0.9 }}
-          animate={{ opacity: 1, rotateY: 0, scale: 1 }}
-          exit={{ opacity: 0, rotateY: -60, scale: 0.92 }}
-          transition={{ type: 'spring', stiffness: 130, damping: 16 }}
-          style={{ transformPerspective: 900 }}
+    // The whole block is the cards' own: the story ignores taps and swipes here.
+    <div data-no-nav role="group" aria-roledescription="carrusel">
+      <div className="relative">
+        <AnimatePresence initial={false} mode="popLayout" custom={dir}>
+          <motion.div
+            key={card.idx}
+            custom={dir}
+            variants={{
+              enter: (d: number) => ({ opacity: 0, x: d * 120, rotate: d * 4, scale: 0.94 }),
+              center: { opacity: 1, x: 0, rotate: 0, scale: 1 },
+              exit: (d: number) => ({ opacity: 0, x: d * -120, rotate: d * -4, scale: 0.94 }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+            drag={count > 1 ? 'x' : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.55}
+            dragSnapToOrigin
+            onDragEnd={onDragEnd}
+            className="cursor-grab active:cursor-grabbing"
+            aria-label={es.slides.cardOf(step + 1, count)}
+          >
+            <PersonCardView card={card} reduced={false} />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          className={arrow}
+          aria-label={es.slides.previousCard}
+          disabled={step === 0}
+          onClick={() => goTo(step - 1)}
         >
-          <PersonCardView card={card} reduced={false} />
-        </motion.div>
-      </AnimatePresence>
-      <div className="mt-4 flex justify-center" data-no-nav>
+          <ChevronIcon className="rotate-180" />
+        </button>
         <button
           type="button"
           disabled={ctx.sharing}
           onClick={() => ctx.onShare({ type: 'person', idx: card.idx })}
-          className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-black/35 px-5 text-sm font-bold hover:bg-black/50 disabled:opacity-60"
+          className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-black/35 px-5 text-sm font-bold whitespace-nowrap hover:bg-black/50 disabled:opacity-60"
         >
           <ShareIcon />
-          {es.share.shareCard}
+          {/* Narrow phones show just "Compartir"; the accessible name stays complete. */}
+          {es.share.share}
+          <span className="max-[380px]:sr-only">{es.share.shareCardRest}</span>
+        </button>
+        <button
+          type="button"
+          className={arrow}
+          aria-label={es.slides.nextCard}
+          disabled={step >= count - 1}
+          onClick={() => goTo(step + 1)}
+        >
+          <ChevronIcon />
         </button>
       </div>
-      <div className="mt-3 flex justify-center gap-1.5" aria-hidden="true">
+
+      <div className="mt-2 flex flex-wrap justify-center">
         {cards.map((c, i) => (
-          <span
+          <button
             key={c.idx}
-            className={`h-1.5 rounded-full transition-all ${i === step ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`}
-          />
+            type="button"
+            aria-label={es.slides.cardOf(i + 1, count)}
+            aria-current={i === step}
+            onClick={() => goTo(i)}
+            className="flex h-6 cursor-pointer items-center px-1"
+          >
+            <span
+              className={`block h-1.5 rounded-full transition-all duration-300 ${i === step ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`}
+            />
+          </button>
         ))}
       </div>
     </div>

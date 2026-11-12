@@ -1,4 +1,3 @@
-import confetti from 'canvas-confetti';
 import { useMemo } from 'react';
 import { createRng } from '../../core/random/rng';
 
@@ -55,23 +54,25 @@ export function EmojiRain({
   );
 }
 
-/** Confetti burst from a point of the screen (0–1 coordinates). */
-let cannon: confetti.CreateTypes | null = null;
-
-export function fireConfetti(x = 0.5, y = 0.6) {
-  try {
-    // One shared instance on the main thread. The default instance moves the drawing to a
-    // Worker with an OffscreenCanvas, which can freeze the page on some mobile browsers.
-    cannon ??= confetti.create(undefined, { resize: true, useWorker: false });
-  } catch {
-    return; // Confetti is decoration: never let it break a slide.
-  }
-  void cannon({
-    particleCount: 60,
-    spread: 75,
-    startVelocity: 38,
-    origin: { x, y },
-    disableForReducedMotion: true,
-    colors: ['#ffffff', '#ffd166', '#ff4d8d', '#7c5cff', '#22d3c5'],
-  });
+/**
+ * Burst of rings from the middle of its parent, drawn with CSS only (transform + opacity on a
+ * handful of elements). Replaces the canvas confetti, which froze some phones. Plays once.
+ */
+export function RingBurst({ className = '', delay = 0 }: { className?: string; delay?: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}
+    >
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="wr-anim absolute aspect-square w-full rounded-full border-2 border-[var(--wr-hi)] opacity-0"
+          style={{
+            animation: `wr-burst 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) ${delay + i * 0.16}s 1 both`,
+          }}
+        />
+      ))}
+    </span>
+  );
 }

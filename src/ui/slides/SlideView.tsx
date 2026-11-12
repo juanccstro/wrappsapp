@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { Slide } from '../../core';
 import { createRng } from '../../core/random/rng';
 import {
@@ -12,7 +12,8 @@ import {
 import { es } from '../../i18n/es';
 import { BarRace, RadialClock, ReplyGraph, ReplyRace } from './charts';
 import { Avatar, Body, CountUp, Layout, RankList, Rise, Title, type SlideCtx } from './common';
-import { EmojiRain, fireConfetti } from './effects';
+import { CheckIcon, CloseIcon } from '../components/icons';
+import { EmojiRain, RingBurst } from './effects';
 import { PersonCards } from './PersonCards';
 
 type Of<K extends Slide['kind']> = { slide: Extract<Slide, { kind: K }>; ctx: SlideCtx };
@@ -285,10 +286,6 @@ function Quiz({ slide, ctx }: Of<'quiz'>) {
   const answered = chosen !== undefined;
   const correct = chosen === slide.data.answer;
 
-  useEffect(() => {
-    if (answered && correct) fireConfetti(0.5, 0.55);
-  }, [answered, correct]);
-
   return (
     <Layout>
       <Title text={slide.title} />
@@ -300,44 +297,73 @@ function Quiz({ slide, ctx }: Of<'quiz'>) {
       >
         {slide.data.options.map((idx, i) => {
           const isAnswer = idx === slide.data.answer;
+          const isChosen = idx === chosen;
+          const missed = answered && isChosen && !isAnswer;
           const state = !answered
-            ? 'bg-black/25 hover:bg-black/40 border-white/50'
+            ? 'bg-black/25 border-white/45 active:bg-black/40 hover:bg-black/35'
             : isAnswer
-              ? 'bg-white text-[#12062b] border-white'
-              : 'bg-black/20 border-white/20 opacity-50';
+              ? 'bg-white text-[#12062b] border-white shadow-[0_0_0_4px_var(--wr-hi),0_18px_40px_rgba(0,0,0,0.35)]'
+              : missed
+                ? 'bg-black/45 border-white/60'
+                : 'bg-black/20 border-white/15 opacity-45';
           return (
             <motion.button
               key={idx}
               type="button"
               aria-disabled={answered}
               tabIndex={answered ? -1 : 0}
-              aria-pressed={idx === chosen}
+              aria-pressed={isChosen}
               onClick={() => {
                 if (!answered) ctx.onAnswer(slide.id, idx);
               }}
-              className={`flex cursor-pointer flex-col items-center gap-2 rounded-3xl border-2 px-2 py-4 text-sm font-bold transition-colors ${state}`}
+              className={`relative cursor-pointer rounded-3xl border-2 text-sm font-bold transition-[background-color,border-color,opacity,box-shadow,color] duration-300 ${state}`}
               initial={{ opacity: 0, scale: 0.7 }}
-              animate={{ opacity: 1, scale: answered && isAnswer ? 1.06 : 1 }}
-              transition={{
-                type: 'spring',
-                stiffness: 200,
-                damping: 15,
-                delay: answered ? 0 : 0.5 + i * 0.1,
+              animate={{
+                opacity: 1,
+                scale: answered && isAnswer && !ctx.reduced ? [1, 1.12, 1.05] : 1,
               }}
+              transition={
+                answered
+                  ? { duration: 0.45, ease: 'easeOut' }
+                  : { type: 'spring', stiffness: 200, damping: 15, delay: 0.5 + i * 0.1 }
+              }
             >
-              <Avatar idx={idx} name={ctx.name(idx)} size={56} />
-              <span className="max-w-full truncate">{ctx.name(idx)}</span>
+              {answered && isAnswer && isChosen && !ctx.reduced && <RingBurst />}
+              <span
+                className="wr-anim flex flex-col items-center gap-2 px-2 py-4"
+                style={missed ? { animation: 'wr-shake 0.45s ease-in-out 1' } : undefined}
+              >
+                <span className="relative">
+                  <Avatar idx={idx} name={ctx.name(idx)} size={56} />
+                  {answered && (isAnswer || isChosen) && (
+                    <motion.span
+                      aria-hidden="true"
+                      className={`absolute -right-1.5 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white text-sm text-white ${isAnswer ? 'bg-[#12a150]' : 'bg-[#d6334a]'}`}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 420, damping: 16, delay: 0.15 }}
+                    >
+                      {isAnswer ? <CheckIcon /> : <CloseIcon />}
+                    </motion.span>
+                  )}
+                </span>
+                <span className="max-w-full truncate">{ctx.name(idx)}</span>
+              </span>
             </motion.button>
           );
         })}
       </div>
-      <p
+      <motion.p
+        key={answered ? 'answered' : 'open'}
         role="status"
         aria-live="polite"
         className="wr-shadow min-h-14 text-lg leading-snug font-bold"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: answered ? 0.25 : 0 }}
       >
         {answered ? (correct ? slide.data.right : slide.data.wrong) : ''}
-      </p>
+      </motion.p>
     </Layout>
   );
 }
@@ -523,11 +549,11 @@ function Vibe({ slide, ctx }: Of<'vibe'>) {
   const longestWord = Math.max(...slide.data.name.split(' ').map((w) => w.length));
   const vibeSize = longestWord >= 12 ? '1.75rem' : longestWord >= 9 ? '2.15rem' : '2.7rem';
   return (
-    <Layout className="items-center text-center">
+    <Layout className="mx-auto max-w-[19rem] items-center text-center">
       {!ctx.reduced && (
         <div
           aria-hidden="true"
-          className="wr-anim absolute top-1/2 left-1/2 -mt-40 -ml-40 h-80 w-80 rounded-full opacity-60"
+          className="wr-anim absolute top-1/2 left-1/2 -mt-[11.5rem] -ml-[11.5rem] h-[23rem] w-[23rem] rounded-full opacity-35"
           style={{
             background:
               'conic-gradient(from 0deg, var(--wr-hi), transparent 30%, white 50%, transparent 70%, var(--wr-hi))',
@@ -557,61 +583,66 @@ function Vibe({ slide, ctx }: Of<'vibe'>) {
 /** Final card. `data-share-card` marks what gets exported as an image. */
 function Summary({ slide, ctx }: Of<'summary'>) {
   const w = ctx.wrapped;
-  useEffect(() => {
-    if (!ctx.reduced) fireConfetti(0.5, 0.35);
-  }, [ctx.reduced]);
-
   return (
-    <Layout className="!justify-start !gap-3 !pt-24 !pb-56">
+    <Layout className="!justify-start !gap-3 !pt-24 !pb-56 short:!pt-[5.25rem]">
       <Title text={slide.title} className="!text-2xl" />
-      <Rise delay={0.4}>
-        <div
-          data-share-card
-          className="relative overflow-hidden rounded-[1.75rem] border-2 border-white/70 bg-[var(--wr-bg)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45)]"
-        >
+      <Rise delay={0.4} className="relative">
+        {/* A soft burst behind the card, outside what gets exported. */}
+        {!ctx.reduced && <RingBurst delay={0.7} />}
+        {/* On short screens the card shrinks so the buttons below never cover it. */}
+        <div className="short:origin-top short:scale-[0.84]">
           <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 opacity-45"
-            style={{
-              background:
-                'linear-gradient(135deg, var(--wr-a), transparent 45%), linear-gradient(315deg, var(--wr-c), transparent 45%)',
-            }}
-          />
-          <div className="relative flex flex-col gap-3">
-            <div>
-              <p className="font-display text-xs font-bold tracking-widest text-[var(--wr-hi)] uppercase">
-                {es.app.name} · {w.period.label}
-              </p>
-              {w.chatName && (
-                <p className="font-display text-xl leading-tight font-black">{w.chatName}</p>
-              )}
-              <p className="mt-1 inline-block rounded-full bg-[var(--wr-hi)] px-3 py-0.5 text-xs font-bold text-[#12062b]">
-                {slide.data.vibeName}
-              </p>
+            data-share-card
+            className="relative overflow-hidden rounded-[1.75rem] border-2 border-white/70 bg-[var(--wr-bg)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45)]"
+          >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 opacity-45"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--wr-a), transparent 45%), linear-gradient(315deg, var(--wr-c), transparent 45%)',
+              }}
+            />
+            <div className="relative flex flex-col gap-3">
+              <div>
+                <p className="font-display text-xs font-bold tracking-widest text-[var(--wr-hi)] uppercase">
+                  {es.app.name} · {w.period.label}
+                </p>
+                {w.chatName && (
+                  <p className="font-display text-xl leading-tight font-black">{w.chatName}</p>
+                )}
+                <p className="mt-1 inline-block rounded-full bg-[var(--wr-hi)] px-3 py-0.5 text-xs font-bold text-[#12062b]">
+                  {slide.data.vibeName}
+                </p>
+              </div>
+              <dl className="grid grid-cols-3 gap-1.5">
+                {slide.data.highlights.slice(0, 6).map((h) => (
+                  <div key={h.label} className="rounded-xl bg-white/12 px-2 py-1.5">
+                    <dd className="font-display text-[0.8rem] leading-tight font-black">
+                      {h.value}
+                    </dd>
+                    <dt className="text-[0.65rem] text-white/75">{h.label}</dt>
+                  </div>
+                ))}
+              </dl>
+              <ol className="flex items-end justify-around gap-2">
+                {slide.data.podium.map((p, i) => (
+                  <li key={p.idx} className="flex min-w-0 flex-col items-center gap-1 text-center">
+                    <Avatar idx={p.idx} name={ctx.name(p.idx)} size={i === 0 ? 52 : 40} />
+                    <span className="max-w-20 truncate text-xs font-bold">{ctx.name(p.idx)}</span>
+                    <span className="font-display text-[0.7rem] tabular-nums">
+                      {formatNumber(p.value)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
             </div>
-            <dl className="grid grid-cols-3 gap-1.5">
-              {slide.data.highlights.slice(0, 6).map((h) => (
-                <div key={h.label} className="rounded-xl bg-white/12 px-2 py-1.5">
-                  <dd className="font-display text-[0.8rem] leading-tight font-black">{h.value}</dd>
-                  <dt className="text-[0.65rem] text-white/75">{h.label}</dt>
-                </div>
-              ))}
-            </dl>
-            <ol className="flex items-end justify-around gap-2">
-              {slide.data.podium.map((p, i) => (
-                <li key={p.idx} className="flex min-w-0 flex-col items-center gap-1 text-center">
-                  <Avatar idx={p.idx} name={ctx.name(p.idx)} size={i === 0 ? 52 : 40} />
-                  <span className="max-w-20 truncate text-xs font-bold">{ctx.name(p.idx)}</span>
-                  <span className="font-display text-[0.7rem] tabular-nums">
-                    {formatNumber(p.value)}
-                  </span>
-                </li>
-              ))}
-            </ol>
           </div>
         </div>
       </Rise>
-      <Body text={slide.body} delay={0.9} />
+      <div className="short:hidden">
+        <Body text={slide.body} delay={0.9} />
+      </div>
     </Layout>
   );
 }

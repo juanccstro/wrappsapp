@@ -107,7 +107,8 @@ export const es = {
     share: 'Compartir',
     download: 'Descargar imagen',
     downloadShort: 'Descargar',
-    shareCard: 'Compartir esta tarjeta',
+    /** Share button of a person card: «Compartir» + this. */
+    shareCardRest: ' esta tarjeta',
     working: 'Preparando la imagen…',
     error: 'No se ha podido crear la imagen. Vuelve a intentarlo.',
     footer: 'Hecho con Wrappsapp · Los mensajes no salieron del dispositivo',
@@ -159,6 +160,9 @@ export const es = {
     streakDays: 'días seguidos',
     longestSilence: 'Silencio más largo, roto por',
     conversationsStarted: 'conversaciones abiertas',
+    previousCard: 'Tarjeta anterior',
+    nextCard: 'Tarjeta siguiente',
+    cardOf: (current: number, total: number) => `Tarjeta ${current} de ${total}`,
   },
   story: {
     close: 'Borrar y salir',

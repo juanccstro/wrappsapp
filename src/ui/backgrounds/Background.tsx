@@ -29,9 +29,9 @@ export function Background({ kind, seed }: Props) {
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
       {kind === 'blobs' && (
         <>
-          <div className="wr-blob wr-blob-a -top-1/4 -left-1/4 h-[60%] w-[80%] bg-[var(--wr-hi)] opacity-30" />
-          <div className="wr-blob wr-blob-b top-1/3 -right-1/3 h-[55%] w-[80%] bg-white opacity-20" />
-          <div className="wr-blob wr-blob-c -bottom-1/4 left-0 h-[50%] w-[70%] bg-[var(--wr-bg)] opacity-50" />
+          <div className="wr-blob wr-blob-a -top-1/4 -left-1/4 h-[70%] w-[95%] bg-[var(--wr-hi)] opacity-40" />
+          <div className="wr-blob wr-blob-b top-1/3 -right-1/3 h-[65%] w-[95%] bg-white opacity-25" />
+          <div className="wr-blob wr-blob-c -bottom-1/4 left-0 h-[60%] w-[85%] bg-[var(--wr-bg)] opacity-60" />
         </>
       )}
 
@@ -109,10 +109,7 @@ export function Background({ kind, seed }: Props) {
 
       {/* Scrim for text contrast, then film grain. */}
       <div className="absolute inset-0 bg-black/25" />
-      <div
-        className="absolute inset-0 opacity-25 mix-blend-overlay"
-        style={{ backgroundImage: GRAIN }}
-      />
+      <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: GRAIN }} />
     </div>
   );
 }

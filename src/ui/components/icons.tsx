@@ -94,3 +94,15 @@ export const BackIcon = (props: IconProps) => (
     <path d="M15 5l-7 7 7 7" />
   </Icon>
 );
+
+export const CheckIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </Icon>
+);
+
+export const ChevronIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m9 5 7 7-7 7" />
+  </Icon>
+);

@@ -42,6 +42,12 @@ test('the demo plays from the landing to the final card, without leaving the dev
   expect(total).toBeLessThanOrEqual(20);
   for (let i = 1; i < total; i++) await page.keyboard.press('ArrowRight');
   await expect(progress).toHaveAttribute('aria-valuenow', String(total));
+  // Skipping fast never leaves old slides behind: only the last one stays on screen.
+  await expect(page.locator('section')).toHaveCount(1);
+  await expect(page.locator('section[aria-roledescription]')).toHaveAttribute(
+    'aria-label',
+    `Diapositiva ${total} de ${total}`,
+  );
 
   await expect(page.getByRole('button', { name: 'Compartir', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Descargar imagen' })).toBeVisible();

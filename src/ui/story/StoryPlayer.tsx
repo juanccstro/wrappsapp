@@ -1,11 +1,4 @@
-import {
-  AnimatePresence,
-  motion,
-  MotionConfig,
-  useReducedMotion,
-  type Variant,
-  type Variants,
-} from 'framer-motion';
+import { motion, MotionConfig, useReducedMotion, type TargetAndTransition } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import type { AudioPlayer } from '../../audio/player';
 import { sceneFor } from '../../audio/scenes';
@@ -47,6 +40,18 @@ type Props = {
 const QUIZ_MS = 12_000;
 /** How long the answer of a quiz stays on screen before moving on. */
 const QUIZ_REVEAL_MS = 3800;
+/** Two navigations closer than this count as skipping fast. */
+const FAST_NAV_MS = 450;
+/** Slide transition, and the quick fade used while skipping fast. */
+const EXIT_MS = 500;
+const HURRY_EXIT_MS = 140;
+
+type Stage = {
+  current: number;
+  leaving: { index: number; hurry: boolean } | null;
+  /** False until the first navigation: the first slide appears without a transition. */
+  moved: boolean;
+};
 
 const durationOf = (slide: Slide) =>
   slide.kind === 'people'
@@ -55,16 +60,17 @@ const durationOf = (slide: Slide) =>
       ? QUIZ_MS
       : slide.durationMs;
 
-type Motion = { initial: Variant; exit: Variant };
+type Motion = { initial: TargetAndTransition; exit: TargetAndTransition };
 
-/** Different kinds of slide arrive in different ways. */
-const TRANSITIONS: Record<'zoom' | 'rise' | 'wipe' | 'slide', Motion> = {
+/**
+ * Different kinds of slide arrive in different ways. Only opacity and transform: they run on
+ * the compositor, so transitions stay smooth on modest phones (clip-path repaints the whole
+ * screen on every frame).
+ */
+const TRANSITIONS: Record<'zoom' | 'rise' | 'pop' | 'slide', Motion> = {
   zoom: { initial: { opacity: 0, scale: 1.08 }, exit: { opacity: 0, scale: 0.95 } },
   rise: { initial: { opacity: 0, y: '18%' }, exit: { opacity: 0, y: '-12%' } },
-  wipe: {
-    initial: { clipPath: 'circle(0% at 50% 60%)', opacity: 1 },
-    exit: { opacity: 0, scale: 0.97 },
-  },
+  pop: { initial: { opacity: 0, scale: 0.88 }, exit: { opacity: 0, scale: 1.04 } },
   slide: { initial: { opacity: 0, x: '30%' }, exit: { opacity: 0, x: '-30%' } },
 };
 
@@ -74,7 +80,7 @@ function transitionOf(kind: SlideKind): Motion {
     case 'vibe':
     case 'busiestDay':
     case 'quiz':
-      return TRANSITIONS.wipe;
+      return TRANSITIONS.pop;
     case 'total':
     case 'laughs':
     case 'streakSilence':
@@ -154,7 +160,37 @@ export function StoryPlayer({
   );
   const holdTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  const go = useCallback((delta: number) => setIndex((i) => clampIndex(i + delta, count)), [count]);
+  // Skipping quickly (several taps in a row) turns transitions into quick fades, so slides
+  // never pile up on screen half-animated.
+  const lastNav = useRef(0);
+  const [fast, setFast] = useState(false);
+  const go = useCallback(
+    (delta: number) => {
+      const now = performance.now();
+      setFast(now - lastNav.current < FAST_NAV_MS);
+      lastNav.current = now;
+      setIndex((i) => clampIndex(i + delta, count));
+    },
+    [count],
+  );
+
+  // What is on screen: the current slide and, for a moment, the one leaving. Never more than
+  // two, however fast the user skips. (AnimatePresence lost track of leaving slides when the
+  // key changed several times in a row and left old slides stuck on screen.) Derived during
+  // render so the leaving slide keeps its instance instead of remounting.
+  const [stage, setStage] = useState<Stage>({ current: index, leaving: null, moved: false });
+  if (stage.current !== index) {
+    setStage({ current: index, leaving: { index: stage.current, hurry: fast }, moved: true });
+  }
+  const leaving = stage.leaving;
+  useEffect(() => {
+    if (!leaving) return;
+    const timer = setTimeout(
+      () => setStage((st) => (st.leaving === leaving ? { ...st, leaving: null } : st)),
+      leaving.hurry ? HURRY_EXIT_MS + 60 : EXIT_MS + 80,
+    );
+    return () => clearTimeout(timer);
+  }, [leaving]);
 
   // Restart the clock on every slide.
   useEffect(() => {
@@ -291,11 +327,40 @@ export function StoryPlayer({
 
   if (!slide) return null;
 
-  const fade: Variant = { opacity: 0 };
-  const variants: Variants = {
-    enter: reduced ? fade : transitionOf(slide.kind).initial,
-    center: { opacity: 1, scale: 1, x: 0, y: 0, clipPath: 'circle(150% at 50% 60%)' },
-    exit: reduced ? fade : transitionOf(slide.kind).exit,
+  const ease = [0.22, 1, 0.36, 1];
+  const fade: TargetAndTransition = { opacity: 0 };
+  const center: TargetAndTransition = { opacity: 1, scale: 1, x: 0, y: 0 };
+
+  const renderSlide = (at: number, role: 'current' | 'leaving') => {
+    const shown = slides[at];
+    if (!shown) return null;
+    const isCurrent = role === 'current';
+    const look = transitionOf(shown.kind);
+    const hurry = leaving?.hurry ?? false;
+    const exit: TargetAndTransition = hurry
+      ? { opacity: 0, transition: { duration: HURRY_EXIT_MS / 1000 } }
+      : reduced
+        ? fade
+        : look.exit;
+    return (
+      <motion.section
+        key={shown.id}
+        aria-roledescription={isCurrent ? 'diapositiva' : undefined}
+        aria-label={isCurrent ? es.story.position(at + 1, count) : undefined}
+        aria-hidden={isCurrent ? undefined : true}
+        className={`absolute inset-0 ${isCurrent ? 'z-[1]' : 'pointer-events-none z-0'}`}
+        style={{ background: slideGradient(at) }}
+        variants={{ enter: reduced || fast ? fade : look.initial, center, exit }}
+        initial={stage.moved ? 'enter' : false}
+        animate={isCurrent ? 'center' : 'exit'}
+        transition={{ duration: reduced || fast ? 0.2 : EXIT_MS / 1000, ease }}
+      >
+        <Background kind={wrapped.theme.background} seed={wrapped.seed} />
+        <div className="relative h-full">
+          <SlideView slide={shown} ctx={ctx} />
+        </div>
+      </motion.section>
+    );
   };
 
   const paused = userPaused || holding;
@@ -316,25 +381,8 @@ export function StoryPlayer({
         {/* Everything that follows the beat lives outside the slides: a ref inside a slide
             is cleared when the previous slide unmounts. */}
         <div className="absolute inset-0">
-          <AnimatePresence initial={false} mode="popLayout">
-            <motion.section
-              key={slide.id}
-              aria-roledescription="diapositiva"
-              aria-label={es.story.position(index + 1, count)}
-              className="absolute inset-0"
-              style={{ background: slideGradient(index) }}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: reduced ? 0.2 : 0.55, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <Background kind={wrapped.theme.background} seed={wrapped.seed} />
-              <div className="relative h-full">
-                <SlideView slide={slide} ctx={ctx} />
-              </div>
-            </motion.section>
-          </AnimatePresence>
+          {leaving && leaving.index !== index && renderSlide(leaving.index, 'leaving')}
+          {renderSlide(index, 'current')}
         </div>
         <div
           ref={glow}

@@ -14,13 +14,14 @@ export function Backdrop() {
 
 /**
  * Mobile-first stage. On a phone it fills the screen; on larger screens the content sits in a
- * 9:16 phone frame, centred, with the animated backdrop around it.
+ * 9:16 phone frame, centred, with the animated backdrop around it. On phones with a notch or a
+ * home indicator, the safe areas keep buttons and text clear of them.
  */
 export function PhoneFrame({ children }: { children: ReactNode }) {
   return (
     <div className="relative flex h-dvh w-full items-center justify-center overflow-hidden sm:p-6">
       <Backdrop />
-      <div className="relative h-full w-full overflow-hidden bg-[var(--wr-bg)] sm:aspect-[9/16] sm:h-[min(100%,56rem)] sm:w-auto sm:rounded-[2.5rem] sm:border sm:border-white/15 sm:shadow-[0_30px_120px_rgba(0,0,0,0.6)]">
+      <div className="relative h-full w-full overflow-hidden bg-[var(--wr-bg)] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:aspect-[9/16] sm:h-[min(100%,56rem)] sm:w-auto sm:rounded-[2.5rem] sm:border sm:border-white/15 sm:shadow-[0_30px_120px_rgba(0,0,0,0.6)]">
         {children}
       </div>
     </div>

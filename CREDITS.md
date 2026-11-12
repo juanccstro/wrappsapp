@@ -20,7 +20,7 @@ Cuando se añadan pistas a `public/audio/`, se listan aquí con su autor, licenc
 
 ## Software
 
-React, Vite, Tailwind CSS, Framer Motion, d3-force, Howler.js, JSZip y canvas-confetti, cada
+React, Vite, Tailwind CSS, Framer Motion, d3-force, Howler.js y JSZip, cada
 uno bajo su propia licencia de código abierto.
 
 Wrappsapp no está afiliado a WhatsApp ni a Meta.
