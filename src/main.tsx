@@ -11,3 +11,10 @@ createRoot(root).render(
     <App />
   </StrictMode>,
 );
+
+// Development only: lets the Worker be driven from the browser console and from E2E tests.
+if (import.meta.env.DEV) {
+  void import('./worker/client').then(({ createWrappedClient }) => {
+    Object.assign(window, { __wrappsapp: { createWrappedClient } });
+  });
+}
