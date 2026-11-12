@@ -12,9 +12,11 @@ import { useWrappsapp } from './useWrappsapp';
 // landing: they load while the chat is being analysed.
 const loadStory = () => import('./story/StoryPlayer');
 const StoryPlayer = lazy(() => loadStory().then((m) => ({ default: m.StoryPlayer })));
+const Report = lazy(() => import('./report/Report').then((m) => ({ default: m.Report })));
 
 export function App() {
-  const { screen, goUpload, goPrivacy, loadFile, loadDemo, start, reset } = useWrappsapp();
+  const { screen, goUpload, goPrivacy, loadFile, loadDemo, start, openReport, backToStory, reset } =
+    useWrappsapp();
   const [audio] = useState(createAudioPlayer);
   const [muted, setMuted] = useState(readMutePreference);
 
@@ -67,9 +69,21 @@ export function App() {
             key={screen.wrapped.seed}
             wrapped={screen.wrapped}
             isDemo={screen.isDemo}
+            startAtEnd={screen.atEnd}
+            onOpenReport={openReport}
             audio={audio}
             muted={muted}
             onToggleMute={toggleMute}
+            onClose={reset}
+          />
+        </Suspense>
+      )}
+      {screen.name === 'report' && (
+        <Suspense fallback={<Loading />}>
+          <Report
+            wrapped={screen.wrapped}
+            analytics={screen.analytics}
+            onBack={backToStory}
             onClose={reset}
           />
         </Suspense>

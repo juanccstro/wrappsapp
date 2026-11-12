@@ -13,6 +13,8 @@ en el navegador, y lo único que se guarda es si tienes la música silenciada.
 - Calcula las estadísticas del grupo y de cada persona en un Web Worker.
 - Genera unas 15–20 diapositivas animadas, con preguntas interactivas y música.
 - Reparte un arquetipo y un título a cada persona, con textos por plantillas (sin IA).
+- Al terminar, «Ver todos los datos» abre un informe con las gráficas completas: actividad
+  por meses, días de la semana, mapa de horas, ranking y ficha de cada persona.
 - Exporta la tarjeta final y las de cada persona como imagen 1080×1920 para compartir.
 - Incluye una demo con un chat inventado, para probarlo sin subir nada.
 

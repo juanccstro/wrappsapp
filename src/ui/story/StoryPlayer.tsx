@@ -37,6 +37,10 @@ type Props = {
   onToggleMute: () => void;
   /** "Borrar y salir". */
   onClose: () => void;
+  /** Opens the full report ("Ver todos los datos"). */
+  onOpenReport: () => void;
+  /** Coming back from the report: open on the final card instead of the intro. */
+  startAtEnd?: boolean;
 };
 
 /** The people slide lasts as long as its cards need. */
@@ -86,12 +90,23 @@ function transitionOf(kind: SlideKind): Motion {
  * Stories player: progress bars, tap right/left, swipe, hold to pause, keyboard and
  * auto-advance. Slides only need to render; all navigation lives here.
  */
-export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClose }: Props) {
+export function StoryPlayer({
+  wrapped,
+  isDemo,
+  audio,
+  muted,
+  onToggleMute,
+  onClose,
+  onOpenReport,
+  startAtEnd = false,
+}: Props) {
   const reduced = useReducedMotion() ?? false;
   const slides = wrapped.slides;
   const count = slides.length;
 
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() =>
+    startAtEnd ? Math.max(0, wrapped.slides.length - 1) : 0,
+  );
   const [userPaused, setUserPaused] = useState(false);
   const [holding, setHolding] = useState(false);
   const [hidden, setHidden] = useState(() => document.hidden);
@@ -387,20 +402,28 @@ export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClo
             className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 px-6 pb-6"
             data-no-nav
           >
-            <Button
-              disabled={shareStatus === 'working'}
-              onClick={() => void runShare({ type: 'summary' }, 'share')}
-            >
-              <ShareIcon />
-              {es.share.share}
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={shareStatus === 'working'}
-              onClick={() => void runShare({ type: 'summary' }, 'download')}
-            >
-              <DownloadIcon />
-              {es.share.download}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                className="!px-3"
+                disabled={shareStatus === 'working'}
+                onClick={() => void runShare({ type: 'summary' }, 'share')}
+              >
+                <ShareIcon />
+                {es.share.share}
+              </Button>
+              <Button
+                variant="secondary"
+                className="!px-3"
+                aria-label={es.share.download}
+                disabled={shareStatus === 'working'}
+                onClick={() => void runShare({ type: 'summary' }, 'download')}
+              >
+                <DownloadIcon />
+                {es.share.downloadShort}
+              </Button>
+            </div>
+            <Button variant="secondary" onClick={onOpenReport}>
+              {es.story.report}
             </Button>
             <div className="flex justify-center gap-6">
               <Button

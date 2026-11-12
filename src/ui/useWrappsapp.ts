@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { PeriodKind, WrappedResult } from '../core';
+import type { Analytics, PeriodKind, WrappedResult } from '../core';
 import { createWrappedClient, type WrappedClient } from '../worker/client';
 import { SessionError, type SessionErrorCode } from '../worker/errors';
 import type { ChatSummary } from '../worker/session';
@@ -10,7 +10,8 @@ export type Screen =
   | { name: 'upload'; error: SessionErrorCode | null }
   | { name: 'loading' }
   | { name: 'period'; summary: ChatSummary }
-  | { name: 'story'; wrapped: WrappedResult; isDemo: boolean };
+  | { name: 'story'; wrapped: WrappedResult; analytics: Analytics; isDemo: boolean; atEnd: boolean }
+  | { name: 'report'; wrapped: WrappedResult; analytics: Analytics; isDemo: boolean };
 
 /** The waiting screen is part of the show: never flash it for a few milliseconds. */
 const MIN_LOADING_MS = 1600;
@@ -58,8 +59,10 @@ export function useWrappsapp() {
     const id = ++run.current;
     setScreen({ name: 'loading' });
     try {
-      const { wrapped } = await atLeast(getClient().analyze(period), MIN_LOADING_MS);
-      if (run.current === id) setScreen({ name: 'story', wrapped, isDemo });
+      const { wrapped, analytics } = await atLeast(getClient().analyze(period), MIN_LOADING_MS);
+      if (run.current === id) {
+        setScreen({ name: 'story', wrapped, analytics, isDemo, atEnd: false });
+      }
     } catch (err) {
       if (run.current === id) setScreen({ name: 'upload', error: codeOf(err) });
     }
@@ -80,10 +83,28 @@ export function useWrappsapp() {
   const goUpload = useCallback(() => setScreen({ name: 'upload', error: null }), []);
   const goPrivacy = useCallback(() => setScreen({ name: 'privacy' }), []);
 
+  /** From the last slide to the full report, and back to where the story ended. */
+  const openReport = useCallback(() => {
+    setScreen((s) => (s.name === 'story' ? { ...s, name: 'report' } : s));
+  }, []);
+  const backToStory = useCallback(() => {
+    setScreen((s) => (s.name === 'report' ? { ...s, name: 'story', atEnd: true } : s));
+  }, []);
+
   const reset = useCallback(() => {
     discard();
     setScreen({ name: 'landing' });
   }, [discard]);
 
-  return { screen, goUpload, goPrivacy, loadFile, loadDemo, start, reset };
+  return {
+    screen,
+    goUpload,
+    goPrivacy,
+    loadFile,
+    loadDemo,
+    start,
+    openReport,
+    backToStory,
+    reset,
+  };
 }

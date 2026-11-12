@@ -46,6 +46,13 @@ test('the demo plays from the landing to the final card, without leaving the dev
   await expect(page.getByRole('button', { name: 'Compartir', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Descargar imagen' })).toBeVisible();
 
+  // The full report opens from the final card and comes back to it.
+  await page.getByRole('button', { name: 'Ver todos los datos' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Todos los datos' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ranking completo' })).toBeVisible();
+  await page.getByRole('button', { name: 'Volver al resumen' }).first().click();
+  await expect(progress).toHaveAttribute('aria-valuenow', String(total));
+
   // Replay, then leave: back on the landing with the chat gone.
   await page.getByRole('button', { name: 'Ver otra vez' }).click();
   await expect(progress).toHaveAttribute('aria-valuenow', '1');
