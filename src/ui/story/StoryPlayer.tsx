@@ -7,10 +7,11 @@ import {
   type Variants,
 } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import type { AudioPlayer } from '../../audio/player';
 import type { Slide, SlideKind, WrappedResult } from '../../core';
 import { es } from '../../i18n/es';
 import { Button } from '../components/Shell';
-import { CloseIcon, PauseIcon, PlayIcon } from '../components/icons';
+import { CloseIcon, PauseIcon, PlayIcon, SoundIcon, SoundOffIcon } from '../components/icons';
 import { clampIndex, classifyGesture, HOLD_MS } from './gestures';
 import { Background } from '../backgrounds/Background';
 import type { SlideCtx } from '../slides/common';
@@ -21,6 +22,9 @@ import { paletteVars, slideGradient } from '../theme/palettes';
 type Props = {
   wrapped: WrappedResult;
   isDemo: boolean;
+  audio: AudioPlayer;
+  muted: boolean;
+  onToggleMute: () => void;
   /** "Borrar y salir". */
   onClose: () => void;
 };
@@ -71,7 +75,7 @@ function transitionOf(kind: SlideKind): Motion {
  * Stories player: progress bars, tap right/left, swipe, hold to pause, keyboard and
  * auto-advance. Slides only need to render; all navigation lives here.
  */
-export function StoryPlayer({ wrapped, isDemo, onClose }: Props) {
+export function StoryPlayer({ wrapped, isDemo, audio, muted, onToggleMute, onClose }: Props) {
   const reduced = useReducedMotion() ?? false;
   const slides = wrapped.slides;
   const count = slides.length;
@@ -158,6 +162,37 @@ export function StoryPlayer({ wrapped, isDemo, onClose }: Props) {
 
   useEffect(() => () => clearTimeout(holdTimer.current), []);
 
+  // Music: starts with the story (the tap that opened it already unlocked audio), follows
+  // the mute button, pauses with the tab and fades out when the story is closed.
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+  useEffect(() => {
+    void audio.start({ seed: wrapped.seed, vibe: wrapped.vibe.id, muted: mutedRef.current });
+    return () => audio.stop();
+  }, [audio, wrapped.seed, wrapped.vibe.id]);
+  useEffect(() => audio.setMuted(muted), [audio, muted]);
+  useEffect(() => {
+    if (hidden) audio.suspend();
+    else audio.resume();
+  }, [audio, hidden]);
+  useEffect(() => audio.setLevel(isLast ? 0.4 : 1, isLast ? 3 : 1), [audio, isLast]);
+
+  // Visual beat: a glow and a tiny bump of the slide on every beat of the track. Written
+  // straight to the DOM, like the progress bar.
+  const glow = useRef<HTMLDivElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (reduced) return;
+    let frame = requestAnimationFrame(function tick() {
+      const beat = audio.beat();
+      const pulse = beat ? Math.pow(1 - beat.phase, 3) : 0;
+      if (glow.current) glow.current.style.opacity = String(pulse * 0.16);
+      if (stage.current) stage.current.style.transform = 'scale(' + (1 + pulse * 0.012) + ')';
+      frame = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [audio, reduced]);
+
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest('[data-no-nav]')) return;
     const box = event.currentTarget.getBoundingClientRect();
@@ -231,7 +266,13 @@ export function StoryPlayer({ wrapped, isDemo, onClose }: Props) {
             transition={{ duration: reduced ? 0.2 : 0.55, ease: [0.22, 1, 0.36, 1] }}
           >
             <Background kind={wrapped.theme.background} seed={wrapped.seed} />
-            <div className="relative h-full">
+            <div
+              ref={glow}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 opacity-0"
+              style={{ background: 'radial-gradient(circle at 50% 55%, white, transparent 65%)' }}
+            />
+            <div ref={stage} className="relative h-full will-change-transform">
               <SlideView slide={slide} ctx={ctx} />
             </div>
           </motion.section>
@@ -273,6 +314,15 @@ export function StoryPlayer({ wrapped, isDemo, onClose }: Props) {
               )}
             </p>
             <div className="pointer-events-auto flex gap-2" data-no-nav>
+              <button
+                type="button"
+                className={chromeButton}
+                aria-label={muted ? es.story.unmute : es.story.mute}
+                aria-pressed={muted}
+                onClick={onToggleMute}
+              >
+                {muted ? <SoundOffIcon /> : <SoundIcon />}
+              </button>
               <button
                 type="button"
                 className={chromeButton}

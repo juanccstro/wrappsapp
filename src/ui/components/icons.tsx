@@ -59,6 +59,20 @@ export const PlayIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const SoundIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 9v6h4l5 4V5L8 9z" />
+    <path d="M16.5 8.5a5 5 0 0 1 0 7" />
+  </Icon>
+);
+
+export const SoundOffIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 9v6h4l5 4V5L8 9z" />
+    <path d="m16 9.5 5 5M21 9.5l-5 5" />
+  </Icon>
+);
+
 export const BackIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M15 5l-7 7 7 7" />

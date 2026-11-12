@@ -3,9 +3,9 @@ import { es } from '../../i18n/es';
 import { Button } from '../components/Shell';
 import { LockIcon } from '../components/icons';
 
-type Props = { onStart: () => void; onDemo: () => void };
+type Props = { onStart: () => void; onDemo: () => void; onCredits: () => void };
 
-export function Landing({ onStart, onDemo }: Props) {
+export function Landing({ onStart, onDemo, onCredits }: Props) {
   const reduced = useReducedMotion();
   const rise = (delay: number) =>
     reduced
@@ -71,7 +71,14 @@ export function Landing({ onStart, onDemo }: Props) {
         </motion.div>
       </div>
 
-      <footer className="relative pt-6 text-center text-xs text-white/60">
+      <footer className="relative flex flex-col items-center gap-2 pt-6 text-center text-xs text-white/60">
+        <button
+          type="button"
+          onClick={onCredits}
+          className="min-h-8 cursor-pointer font-semibold text-white/80 underline underline-offset-4 hover:text-white"
+        >
+          {es.landing.credits}
+        </button>
         {es.app.disclaimer}
       </footer>
     </main>
