@@ -1,8 +1,27 @@
+# Dependencias y compilados
 node_modules
 dist
 coverage
-.vercel
+playwright-report/
+test-results/
+
+# Entorno y secretos
+.env
+.env.*
 *.local
+.vercel
+
+# Sistema y editores
 .DS_Store
-# Exportaciones reales de chats: nunca al repo
+Thumbs.db
+*.log
+.vscode/
+.idea/
+.claude/
+
+# Chats reales: nunca al repositorio
 tests/fixtures/private/
+Chat de WhatsApp*
+WhatsApp Chat*
+_chat.txt
+*.zip

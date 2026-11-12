@@ -2,6 +2,7 @@
   "name": "wrappsapp",
   "private": true,
   "version": "0.1.0",
+  "description": "El Wrapped de tu grupo: convierte la exportación de un chat en un resumen animado. Todo se procesa en el navegador.",
   "type": "module",
   "scripts": {
     "dev": "vite",
