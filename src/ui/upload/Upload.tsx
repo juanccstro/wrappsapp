@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type DragEvent } from 'react';
 import { es } from '../../i18n/es';
-import type { SessionErrorCode } from '../../worker/session';
+import type { SessionErrorCode } from '../../worker/errors';
 import { Button } from '../components/Shell';
 import { BackIcon, LockIcon, UploadIcon } from '../components/icons';
 

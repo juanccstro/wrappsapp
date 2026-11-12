@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { PALETTE_COUNT } from '../../core';
+import { PALETTE_COUNT } from '../../core/wrapped/types';
 
 /**
  * Curated palettes. `a`–`d` are the saturated colours the slide gradients rotate through

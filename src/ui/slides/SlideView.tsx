@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useMemo } from 'react';
-import { createRng, type Slide } from '../../core';
+import type { Slide } from '../../core';
+import { createRng } from '../../core/random/rng';
 import {
   formatDay,
   formatDuration,
@@ -462,6 +463,32 @@ function Ranking({ slide, ctx }: Of<'ranking'>) {
   );
 }
 
+function Images({ slide, ctx }: Of<'images'>) {
+  return (
+    <Layout className="!gap-4">
+      <Title text={slide.title} />
+      <Body text={slide.body} />
+      <RankList items={slide.data.ranking} ctx={ctx} delay={0.8} />
+      <ul className="flex flex-col gap-2">
+        {slide.data.reactions.map((reaction, i) => (
+          <motion.li
+            key={i}
+            className="flex items-end gap-2"
+            initial={{ opacity: 0, x: 40, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 170, damping: 16, delay: 1.5 + i * 0.35 }}
+          >
+            <Avatar idx={reaction.idx} name={ctx.name(reaction.idx)} size={32} />
+            <p className="max-w-[85%] rounded-2xl rounded-bl-sm bg-white px-3 py-2 text-sm leading-snug font-semibold break-words text-[#12062b]">
+              {reaction.text}
+            </p>
+          </motion.li>
+        ))}
+      </ul>
+    </Layout>
+  );
+}
+
 function Fact({ slide, ctx }: Of<'fact'>) {
   return (
     <Layout>
@@ -615,6 +642,8 @@ export function SlideView({ slide, ctx }: { slide: Slide; ctx: SlideCtx }) {
       return <StreakSilence slide={slide} ctx={ctx} />;
     case 'ranking':
       return <Ranking slide={slide} ctx={ctx} />;
+    case 'images':
+      return <Images slide={slide} ctx={ctx} />;
     case 'fact':
       return <Fact slide={slide} ctx={ctx} />;
     case 'people':

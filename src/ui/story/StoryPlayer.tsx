@@ -74,6 +74,7 @@ function transitionOf(kind: SlideKind): Motion {
     case 'race':
     case 'replySpeed':
     case 'ranking':
+    case 'images':
     case 'starterVsMystery':
       return TRANSITIONS.slide;
     default:

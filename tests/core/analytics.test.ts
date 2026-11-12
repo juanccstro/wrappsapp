@@ -201,6 +201,24 @@ describe('text details', () => {
     expect(r.people[1]).toMatchObject({ stickers: 1, deleted: 1 });
   });
 
+  it('counts photos and keeps the replies that laughed the most at them', () => {
+    const mark = String.fromCodePoint(0x200e);
+    const r = of([
+      `[1/3/26, 10:00:00] Ana: ${mark}imagen omitida`,
+      '[1/3/26, 10:00:30] Beto: JAJAJAJAJAJA no puede ser',
+      '[1/3/26, 10:01:00] Carla: jaja',
+      '[1/3/26, 10:01:10] Ana: jajajajajajajajaja', // laughing at your own photo does not count
+      '[1/3/26, 10:02:00] Carla: qué bonito',
+      `[1/3/26, 12:00:00] Beto: ${mark}imagen omitida`,
+      '[1/3/26, 12:30:00] Ana: jajajajajajajajajajajaja', // too late to be a reaction
+    ]);
+    expect(r.people.map((p) => p.images)).toEqual([1, 1, 0]);
+    expect(r.imageReactions).toEqual([
+      { text: 'JAJAJAJAJAJA no puede ser', senderIdx: 1, toIdx: 0 },
+      { text: 'jaja', senderIdx: 2, toIdx: 0 },
+    ]);
+  });
+
   it('handles 300k messages quickly', () => {
     const names = ['Juan', 'Marta', 'Lucía', 'Dani', 'Pepe', 'Ana'];
     const bodies = [

@@ -4,9 +4,9 @@ import { es } from '../../i18n/es';
 import { Button } from '../components/Shell';
 import { LockIcon } from '../components/icons';
 
-type Props = { onStart: () => void; onDemo: () => void };
+type Props = { onStart: () => void; onDemo: () => void; onPrivacy: () => void };
 
-export function Landing({ onStart, onDemo }: Props) {
+export function Landing({ onStart, onDemo, onPrivacy }: Props) {
   const reduced = useReducedMotion();
   const rise = (delay: number) =>
     reduced
@@ -70,7 +70,15 @@ export function Landing({ onStart, onDemo }: Props) {
         </motion.div>
       </div>
 
-      <footer className="relative pt-6 text-center text-xs text-white/60">
+      {/* Solid backdrop: the decorative blobs behind would lower the contrast of small text. */}
+      <footer className="relative -mx-6 mt-6 -mb-6 flex flex-col items-center gap-1 bg-[var(--wr-bg)]/85 px-6 pt-3 pb-5 text-center text-xs text-white/80">
+        <button
+          type="button"
+          onClick={onPrivacy}
+          className="min-h-8 cursor-pointer font-semibold text-white underline underline-offset-4"
+        >
+          {es.landing.privacy}
+        </button>
         {es.app.disclaimer}
       </footer>
     </main>

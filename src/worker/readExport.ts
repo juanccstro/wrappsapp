@@ -1,4 +1,4 @@
-import { SessionError } from './session';
+import { SessionError } from './errors';
 
 /** A .zip starts with "PK". The file name is not trusted: some phones rename exports. */
 async function isZip(file: Blob): Promise<boolean> {

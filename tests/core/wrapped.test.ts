@@ -147,6 +147,19 @@ describe('WrappedResult', () => {
     expect(cards[0]?.name).toBe('Nico'); // most active first
   });
 
+  it('adds the photos slide with laughing reactions when the export names photos', async () => {
+    const { wrapped: w } = await wrap(demoChat, 'year');
+    const images = w.slides.find((s) => s.kind === 'images');
+    if (images?.kind !== 'images') throw new Error('no images slide');
+    expect(images.data.ranking.length).toBeGreaterThan(0);
+    expect(images.data.reactions.length).toBeGreaterThan(0);
+    expect(images.data.reactions.length).toBeLessThanOrEqual(3);
+
+    // Android without files cannot tell photos apart: the slide must not appear.
+    const levelled = await wrap(withoutMediaTypes(demoChat), 'year');
+    expect(levelled.wrapped.slides.map((s) => s.kind)).not.toContain('images');
+  });
+
   it('makes quizzes that can be answered', async () => {
     const { wrapped: w } = await wrap(demoChat, 'year');
     const quizzes = w.slides.filter((s) => s.kind === 'quiz');

@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "parse": "tsx scripts/parse.ts",
     "fixtures": "tsx scripts/make-fixtures.ts",
-    "demo": "tsx scripts/demo.ts"
+    "demo": "tsx scripts/demo.ts",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@fontsource-variable/space-grotesk": "^5.3.0",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/vite": "^4.3.5",
     "@types/canvas-confetti": "^1.9.0",
     "@types/d3-force": "^3.0.10",

@@ -1,4 +1,4 @@
-import { createRng } from '../core';
+import { createRng } from '../core/random/rng';
 
 export const SYNTH_BPM = 118;
 const BEAT = 60 / SYNTH_BPM;

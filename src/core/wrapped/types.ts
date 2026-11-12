@@ -76,6 +76,14 @@ export type Slide =
       }
     >
   | SlideOf<'ranking', { topic: RankingTopic; ranking: Ranked[] }>
+  | SlideOf<
+      'images',
+      {
+        ranking: Ranked[];
+        /** Laughing replies that followed a photo: the text and who wrote it. */
+        reactions: { text: string; idx: number }[];
+      }
+    >
   | SlideOf<'fact', { topic: 'subject'; value: number }>
   | SlideOf<'people', { cards: PersonCard[] }>
   | SlideOf<'vibe', { vibeId: VibeId; name: string }>

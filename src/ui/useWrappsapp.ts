@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PeriodKind, WrappedResult } from '../core';
 import { createWrappedClient, type WrappedClient } from '../worker/client';
-import { SessionError, type ChatSummary, type SessionErrorCode } from '../worker/session';
+import { SessionError, type SessionErrorCode } from '../worker/errors';
+import type { ChatSummary } from '../worker/session';
 
 export type Screen =
   | { name: 'landing' }
+  | { name: 'privacy' }
   | { name: 'upload'; error: SessionErrorCode | null }
   | { name: 'loading' }
   | { name: 'period'; summary: ChatSummary }
@@ -76,11 +78,12 @@ export function useWrappsapp() {
   }, [start]);
 
   const goUpload = useCallback(() => setScreen({ name: 'upload', error: null }), []);
+  const goPrivacy = useCallback(() => setScreen({ name: 'privacy' }), []);
 
   const reset = useCallback(() => {
     discard();
     setScreen({ name: 'landing' });
   }, [discard]);
 
-  return { screen, goUpload, loadFile, loadDemo, start, reset };
+  return { screen, goUpload, goPrivacy, loadFile, loadDemo, start, reset };
 }

@@ -353,6 +353,27 @@ export const podcast = definePool({
   ],
 });
 
+export const images = definePool({
+  slots: ['who', 'n', 'total', 'reactor'],
+  titles: [
+    'Reportaje gráfico',
+    '{n|num} fotos de {who}',
+    'Si no hay foto, no pasó',
+    'El carrete de {who}',
+    'Fotos que dieron que hablar',
+  ],
+  bodies: [
+    '{who} mandó {n|num} fotos. Todo queda documentado.',
+    'De las {total|num} fotos del chat, {n|num} son de {who}.',
+    '{n|num} fotos de {who}. Y cada una, con su ronda de comentarios.',
+    'Nadie dispara tanto como {who}: {n|num} fotos.',
+    '{who} manda la foto y {reactor} pone la risa. Equipo perfecto.',
+    'Las mejores reacciones del chat llegaron justo después de una foto de {who}.',
+    '{n|num} veces dijo {who} «mirad esto» sin decir nada.',
+    'El álbum del chat lo firma {who}: {n|num} fotos.',
+  ],
+});
+
 export const shouts = definePool({
   slots: ['who', 'n'],
   titles: [

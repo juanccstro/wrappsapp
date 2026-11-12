@@ -25,6 +25,10 @@ import {
 } from './types';
 
 const TOP_N = 10;
+/** A reply counts as a reaction to a photo if it comes this soon after it. */
+const IMAGE_REACTION_MINUTES = 3;
+const IMAGE_REACTION_MAX_CHARS = 90;
+const IMAGE_REACTIONS_KEPT = 3;
 const KEYWORDS_PER_DAY = 5;
 const SILENCE_PREVIEW_CHARS = 80;
 const MIN_SIGNATURE_WORD_USES = 3;
@@ -87,6 +91,7 @@ type PersonAcc = {
   links: number;
   stickers: number;
   gifs: number;
+  images: number;
   media: number;
   deleted: number;
   edited: number;
@@ -123,6 +128,7 @@ const newPerson = (): PersonAcc => ({
   links: 0,
   stickers: 0,
   gifs: 0,
+  images: 0,
   media: 0,
   deleted: 0,
   edited: 0,
@@ -212,6 +218,16 @@ export function analyzeChat(
   );
   let longestSilence: Analytics['longestSilence'] = null;
 
+  // Laughing replies to photos.
+  let lastImage: { sender: number; minute: number } | null = null;
+  const reactions: {
+    text: string;
+    senderIdx: number;
+    toIdx: number;
+    score: number;
+    order: number;
+  }[] = [];
+
   // Conversation state.
   let prevSender = -1;
   let prevMinute = 0;
@@ -280,8 +296,11 @@ export function analyzeChat(
         } else if (m.mediaType === 'gif') {
           totals.gifs++;
           p.gifs++;
-        } else if (m.mediaType === 'image') totals.images++;
-        else if (m.mediaType === 'video') totals.videos++;
+        } else if (m.mediaType === 'image') {
+          totals.images++;
+          p.images++;
+          lastImage = { sender, minute };
+        } else if (m.mediaType === 'video') totals.videos++;
         else if (m.mediaType === 'document') totals.documents++;
         break;
       case 'deleted':
@@ -316,12 +335,14 @@ export function analyzeChat(
 
         let mood = 0;
         let laughsHere = 0;
+        let laughLetters = 0;
         let previousContentWord = '';
         for (const token of tokens) {
           const lower = token.toLowerCase();
           const family = laughFamily(lower);
           if (family) {
             laughsHere++;
+            laughLetters += token.length;
             bump(p.laughCounts, laughLabel(family, token));
             if (
               family !== 'xd' &&
@@ -360,10 +381,27 @@ export function analyzeChat(
           bump(p.emojiCounts, emoji);
           if (LAUGH_EMOJIS.has(emoji)) {
             laughsHere++;
+            laughLetters += 4;
             bump(p.laughCounts, emoji);
           }
           if (POSITIVE_EMOJIS.has(emoji)) mood++;
           else if (NEGATIVE_EMOJIS.has(emoji)) mood--;
+        }
+
+        if (
+          lastImage &&
+          laughsHere > 0 &&
+          sender !== lastImage.sender &&
+          minute - lastImage.minute <= IMAGE_REACTION_MINUTES &&
+          m.text.length <= IMAGE_REACTION_MAX_CHARS
+        ) {
+          reactions.push({
+            text: m.text,
+            senderIdx: sender,
+            toIdx: lastImage.sender,
+            score: laughLetters,
+            order: reactions.length,
+          });
         }
 
         laughTotal += laughsHere;
@@ -567,6 +605,7 @@ export function analyzeChat(
       links: p.links,
       stickers: p.stickers,
       gifs: p.gifs,
+      images: p.images,
       media: p.media,
       deleted: p.deleted,
       edited: p.edited,
@@ -627,5 +666,9 @@ export function analyzeChat(
     people: peopleStats,
     replyMatrix,
     topPair,
+    imageReactions: reactions
+      .sort((x, y) => y.score - x.score || x.order - y.order)
+      .slice(0, IMAGE_REACTIONS_KEPT)
+      .map(({ text, senderIdx, toIdx }) => ({ text, senderIdx, toIdx })),
   };
 }

@@ -1,4 +1,4 @@
-import { createRng } from '../core';
+import { createRng } from '../core/random/rng';
 
 /** One entry of public/audio/tracks.json. */
 export type Track = {

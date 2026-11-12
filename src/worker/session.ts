@@ -10,7 +10,6 @@ import {
   resolvePeriod,
   sliceChat,
   type Analytics,
-  type ChatParseErrorCode,
   type ParsedChat,
   type Participant,
   type Period,
@@ -18,6 +17,7 @@ import {
   type PeriodOption,
   type WrappedResult,
 } from '../core';
+import { SessionError } from './errors';
 
 export type ChatSummary = {
   participants: Participant[];
@@ -38,18 +38,7 @@ export type AnalysisResult = {
   wrapped: WrappedResult;
 };
 
-export type SessionErrorCode =
-  ChatParseErrorCode | 'no_chat_loaded' | 'bad_zip' | 'zip_without_chat' | 'unexpected';
-
-export class SessionError extends Error {
-  readonly code: SessionErrorCode;
-
-  constructor(code: SessionErrorCode) {
-    super(`Session error: ${code}`);
-    this.name = 'SessionError';
-    this.code = code;
-  }
-}
+export { SessionError, type SessionErrorCode } from './errors';
 
 /**
  * Holds the parsed chat in memory (and only in memory) and runs the core on it. No DOM and no

@@ -53,6 +53,8 @@ export type PersonStats = {
   links: number;
   stickers: number;
   gifs: number;
+  /** Photos sent (only known when the export names media types). */
+  images: number;
   media: number;
   deleted: number;
   edited: number;
@@ -134,4 +136,9 @@ export type Analytics = {
   replyMatrix: number[][];
   /** The two people who reply to each other the most. */
   topPair: { a: number; b: number; replies: number } | null;
+  /**
+   * Replies full of laughter that arrived right after someone sent a photo, funniest first.
+   * Only laughing replies are ever collected: this is for celebrating, never for mocking.
+   */
+  imageReactions: { text: string; senderIdx: number; toIdx: number }[];
 };

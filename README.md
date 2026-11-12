@@ -38,6 +38,7 @@ Para exportar un chat: abre el chat → menú → **Más** → **Exportar chat**
 | `npm test`                     | Tests unitarios                          |
 | `npm run lint`                 | ESLint                                   |
 | `npm run typecheck`            | Comprobación de tipos                    |
+| `npm run e2e`                  | Test de extremo a extremo (Playwright)   |
 | `npm run demo`                 | Imprime en consola el Wrapped de la demo |
 | `npm run parse -- archivo.txt` | Resumen de un chat exportado             |
 
@@ -49,6 +50,12 @@ Para exportar un chat: abre el chat → menú → **Más** → **Exportar chat**
 - `src/worker/`: Web Worker que ejecuta `core` sin bloquear la interfaz.
 - `src/ui/`: pantallas, motor de stories, diapositivas y exportación de imágenes.
 - `src/audio/`: música generada en el navegador; admite pistas propias en `public/audio/`.
+
+## Despliegue
+
+Es un sitio estático: sirve cualquier alojamiento que publique `dist/`. Para Vercel basta con
+importar el repositorio; `vercel.json` ya incluye las cabeceras de seguridad, entre ellas una
+Content Security Policy que solo permite conexiones al propio sitio.
 
 ## Privacidad
 

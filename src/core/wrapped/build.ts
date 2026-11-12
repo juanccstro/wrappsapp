@@ -68,6 +68,7 @@ const DURATIONS: Record<SlideKind, number> = {
   starterVsMystery: 8000,
   streakSilence: 8000,
   ranking: 7000,
+  images: 9000,
   fact: 6000,
   people: 9000,
   vibe: 8000,
@@ -541,6 +542,31 @@ export function buildWrapped(input: WrappedInput): WrappedResult {
     );
   }
 
+  // Photos: who sends the most and the replies that laughed the hardest at them. Only when
+  // the export says which media are photos (iPhone, or Android exported with files).
+  const photographers = rank(people, (p) => p.images);
+  const photographer = photographers[0];
+  const hasImages = a.mediaTypesKnown && photographer !== undefined && photographer.value >= 10;
+  if (hasImages && photographer) {
+    const reactions = a.imageReactions.map((r) => ({
+      text: oneLine(r.text, 70),
+      idx: r.senderIdx,
+    }));
+    blockB.push(
+      slide(
+        'images',
+        'images',
+        write('images', pools.images, {
+          who: nameOf(photographer.idx),
+          n: photographer.value,
+          total: t.images,
+          reactor: reactions[0] ? nameOf(reactions[0].idx) : null,
+        }),
+        { ranking: photographers.slice(0, 3), reactions },
+      ),
+    );
+  }
+
   // Optional slides.
   const optional: { slide: Slide; reveals?: QuizMetric }[] = [];
   const ranking = (
@@ -620,7 +646,8 @@ export function buildWrapped(input: WrappedInput): WrappedResult {
   const chosenOptional = rng
     .scope('slides:optional')
     .shuffle(optional)
-    .slice(0, MAX_OPTIONAL_SLIDES);
+    // The photos slide takes one of the optional places, to keep the story at 15–20 slides.
+    .slice(0, hasImages ? MAX_OPTIONAL_SLIDES - 1 : MAX_OPTIONAL_SLIDES);
   for (const o of chosenOptional) blockB.push(o.slide);
 
   // Quizzes: one before the "who does what" block, another after it about something that

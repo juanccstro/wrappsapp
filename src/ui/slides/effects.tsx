@@ -1,6 +1,6 @@
 import confetti from 'canvas-confetti';
 import { useMemo } from 'react';
-import { createRng } from '../../core';
+import { createRng } from '../../core/random/rng';
 
 const DROPS = 16;
 

@@ -43,6 +43,7 @@ const SLIDE_POOLS: Record<string, Pool> = {
   starterVsMystery: slides.starterVsMystery,
   streakSilence: slides.streakSilence,
   podcast: slides.podcast,
+  images: slides.images,
   shouts: slides.shouts,
   deleted: slides.deleted,
   questions: slides.questions,

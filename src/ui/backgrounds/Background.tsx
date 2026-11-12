@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { createRng, type BackgroundId } from '../../core';
+import type { BackgroundId } from '../../core';
+import { createRng } from '../../core/random/rng';
 
 type Props = { kind: BackgroundId; seed: string };
 

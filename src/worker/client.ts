@@ -1,6 +1,7 @@
 import type { PeriodKind } from '../core';
 import type { WorkerRequest, WorkerResponse, WorkerResult } from './protocol';
-import { SessionError, type AnalysisResult, type ChatSummary } from './session';
+import { SessionError } from './errors';
+import type { AnalysisResult, ChatSummary } from './session';
 
 type Pending = { resolve: (value: never) => void; reject: (error: Error) => void };
 type RequestBody = WorkerRequest extends infer R

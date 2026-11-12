@@ -16,8 +16,32 @@ export const es = {
       'Convierte la exportación de un chat en un resumen animado: quién escribe más, a qué hora, vuestras risas y un título para cada persona.',
     start: 'Haz tu Wrapped',
     demo: 'Ver demo',
+    privacy: 'Privacidad',
     privacyDetail: 'Todo se calcula en tu navegador. No hay servidor ni subida de archivos.',
     consent: 'Úsalo con chats en los que todo el mundo esté de acuerdo en verlo.',
+  },
+  privacy: {
+    title: 'Privacidad',
+    summary:
+      'Wrappsapp funciona entero en tu navegador. Tu chat no se sube, no se guarda y no lo ve nadie más que tú.',
+    points: [
+      {
+        title: 'Tus mensajes no salen de tu dispositivo',
+        text: 'No hay servidor. El archivo se lee y se analiza en tu navegador, y la web tiene bloqueado por configuración el envío de datos a otros sitios.',
+      },
+      {
+        title: 'No se guarda nada del chat',
+        text: 'El chat vive solo en memoria mientras ves el resumen. Al pulsar «Borrar y salir» o cerrar la pestaña, desaparece. Lo único que se recuerda es si tienes la música silenciada.',
+      },
+      {
+        title: 'Sin cookies ni seguimiento',
+        text: 'No hay cookies, cuentas ni analítica sobre lo que escribes. Las imágenes que compartes se crean en tu dispositivo y solo salen si tú las envías.',
+      },
+      {
+        title: 'Los demás también cuentan',
+        text: 'Un chat es de todas las personas que escriben en él. Úsalo con conversaciones en las que todo el mundo esté de acuerdo en verlo.',
+      },
+    ],
   },
   upload: {
     title: 'Sube tu chat',
