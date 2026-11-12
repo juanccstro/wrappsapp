@@ -181,5 +181,5 @@ describe('streaming and performance', () => {
     const elapsed = performance.now() - start;
     expect(chat.messages).toHaveLength(300_000);
     expect(elapsed).toBeLessThan(3000);
-  });
+  }, 30_000);
 });

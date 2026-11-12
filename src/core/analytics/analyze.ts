@@ -54,8 +54,13 @@ function median(values: number[]): number | null {
     : ((sorted[mid - 1] as number) + (sorted[mid] as number)) / 2;
 }
 
-const isContentWord = (lower: string) =>
-  lower.length >= 3 && !STOPWORDS.has(lower) && !/^\d+$/.test(lower);
+const isDigit = (code: number) => code >= 48 && code <= 57;
+
+function isContentWord(lower: string): boolean {
+  if (lower.length < 3 || STOPWORDS.has(lower)) return false;
+  // Only words that start with a digit can be plain numbers.
+  return !(isDigit(lower.charCodeAt(0)) && /^\d+$/.test(lower));
+}
 
 type PersonAcc = {
   messages: number;
@@ -568,6 +573,7 @@ export function analyzeChat(
       polls: p.polls,
       favoritePerson,
       replyEvenness,
+      positiveMessages: p.positive,
       positivity: moody > 0 ? p.positive / moody : null,
       activeDays: p.activeDays,
       longestAbsenceDays: p.longestAbsenceDays,

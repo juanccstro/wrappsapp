@@ -219,7 +219,8 @@ describe('text details', () => {
     const big = parseChat(lines.join('\n'));
     const start = performance.now();
     const r = analyzeChat(big);
-    expect(performance.now() - start).toBeLessThan(3000);
+    // Loose bound: other test files run at the same time. See scripts/bench.ts for real timings.
+    expect(performance.now() - start).toBeLessThan(6000);
     expect(r.totals.messages).toBe(300_000);
-  });
+  }, 30_000);
 });

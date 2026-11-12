@@ -3,7 +3,7 @@ import type { AnalysisResult, ChatSummary, SessionErrorCode } from './session';
 
 /** Messages the page sends to the Worker. The chat only ever travels page → Worker. */
 export type WorkerRequest =
-  | { id: number; type: 'load'; file: Blob }
+  | { id: number; type: 'load'; file: Blob; fileName?: string }
   | { id: number; type: 'loadText'; text: string }
   | { id: number; type: 'analyze'; period: PeriodKind }
   | { id: number; type: 'clear' };

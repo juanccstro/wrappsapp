@@ -301,6 +301,7 @@ exports[`determinism: same chat, same result > matches the stored snapshot 1`] =
         "nightShare": 0.16666666666666666,
         "podcastMinutes": 0,
         "polls": 0,
+        "positiveMessages": 2,
         "positivity": 1,
         "questions": 0,
         "replies": 3,
@@ -343,6 +344,7 @@ exports[`determinism: same chat, same result > matches the stored snapshot 1`] =
         "nightShare": 0.25,
         "podcastMinutes": 0,
         "polls": 0,
+        "positiveMessages": 1,
         "positivity": 1,
         "questions": 0,
         "replies": 2,
@@ -385,6 +387,7 @@ exports[`determinism: same chat, same result > matches the stored snapshot 1`] =
         "nightShare": 0.25,
         "podcastMinutes": 0,
         "polls": 0,
+        "positiveMessages": 0,
         "positivity": null,
         "questions": 1,
         "replies": 4,
@@ -427,6 +430,7 @@ exports[`determinism: same chat, same result > matches the stored snapshot 1`] =
         "nightShare": 0.25,
         "podcastMinutes": 0,
         "polls": 1,
+        "positiveMessages": 0,
         "positivity": null,
         "questions": 1,
         "replies": 1,
@@ -528,10 +532,6 @@ exports[`determinism: same chat, same result > matches the stored snapshot 1`] =
       {
         "count": 1,
         "key": "largo",
-      },
-      {
-        "count": 1,
-        "key": "mirad",
       },
       {
         "count": 1,

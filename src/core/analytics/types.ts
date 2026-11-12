@@ -61,6 +61,8 @@ export type PersonStats = {
   favoritePerson: number | null;
   /** How evenly they reply to everyone (0–1; 1 = perfectly even). Null with too few replies. */
   replyEvenness: number | null;
+  /** Messages with a clearly positive mood. */
+  positiveMessages: number;
   /** Fraction of their messages with a clear mood that are positive. Null if none. */
   positivity: number | null;
   activeDays: number;

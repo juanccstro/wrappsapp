@@ -18,7 +18,7 @@ async function* readText(file: Blob): AsyncGenerator<string> {
 async function handle(request: WorkerRequest) {
   switch (request.type) {
     case 'load':
-      return session.load(readText(request.file));
+      return session.load(readText(request.file), request.fileName);
     case 'loadText':
       return session.load([request.text]);
     case 'analyze':

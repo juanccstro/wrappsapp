@@ -12,6 +12,7 @@ nuestra nuestro o os otra otras otro otros para pero poco por porque porqué pue
 quien quién se sea ser si sí sido siempre sin sobre solo sólo son soy su sus tal tambien también
 tampoco tan tanto te ten tengo ti tiene tienen tienes toda todas todo todos tu tú tus un una uno unas
 unos va vale vamos van vas vaya ve veces ver vez voy vosotros ya yo
+alguien mira mirad oye ayer anda dime digo dice dicho hecho tener hace haciendo quiero quieres
 pq xq porq tb tmb tbn bn vd dnd ns nse aki ok okay okey oki vale venga osea sea bueno claro nah eh ah
 oh uf ay hey ey mm mmm hmm pff bua buah jo joe tio tía tia tío
 the and you that was for are with his they this have from one had word but not what all were when

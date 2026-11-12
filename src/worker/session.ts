@@ -1,9 +1,11 @@
 import {
   analyzeChat,
+  buildWrapped,
   ChatParseError,
   computeSeed,
   createChatParser,
   defaultPeriodKind,
+  detectChatName,
   listPeriods,
   resolvePeriod,
   sliceChat,
@@ -14,6 +16,7 @@ import {
   type Period,
   type PeriodKind,
   type PeriodOption,
+  type WrappedResult,
 } from '../core';
 
 export type ChatSummary = {
@@ -31,6 +34,8 @@ export type AnalysisResult = {
   participants: Participant[];
   isGroup: boolean;
   analytics: Analytics;
+  /** Slides, texts and theme: what the UI plays. */
+  wrapped: WrappedResult;
 };
 
 export type SessionErrorCode = ChatParseErrorCode | 'no_chat_loaded' | 'unexpected';
@@ -51,6 +56,7 @@ export class SessionError extends Error {
  */
 export function createSession() {
   let chat: ParsedChat | null = null;
+  let chatName: string | null = null;
 
   const summarize = (parsed: ParsedChat): ChatSummary => ({
     participants: parsed.participants,
@@ -61,12 +67,17 @@ export function createSession() {
 
   return {
     /** Parses a chat that arrives in blocks (e.g. from a file stream). */
-    async load(chunks: AsyncIterable<string> | Iterable<string>): Promise<ChatSummary> {
+    async load(
+      chunks: AsyncIterable<string> | Iterable<string>,
+      fileName?: string,
+    ): Promise<ChatSummary> {
       chat = null;
+      chatName = null;
       const parser = createChatParser();
       try {
         for await (const chunk of chunks) parser.push(chunk);
         chat = parser.finish();
+        chatName = detectChatName(chat, fileName);
       } catch (err) {
         throw new SessionError(err instanceof ChatParseError ? err.code : 'unexpected');
       }
@@ -78,18 +89,23 @@ export function createSession() {
       const period = resolvePeriod(chat, kind);
       const sliced = sliceChat(chat, period);
       const seed = await computeSeed(sliced, period.key);
+      const analytics = analyzeChat(sliced);
+      const participants = sliced.participants;
+      const isGroup = sliced.meta.isGroup;
       return {
         seed,
         period,
-        participants: sliced.participants,
-        isGroup: sliced.meta.isGroup,
-        analytics: analyzeChat(sliced),
+        participants,
+        isGroup,
+        analytics,
+        wrapped: buildWrapped({ seed, period, participants, isGroup, analytics, chatName }),
       };
     },
 
     /** "Borrar y salir": forgets the chat. */
     clear(): void {
       chat = null;
+      chatName = null;
     },
   };
 }

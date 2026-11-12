@@ -32,6 +32,15 @@ const MODIFIER_RE = new RegExp(MODIFIER, 'gu');
  * emoji counts together.
  */
 export function extractEmojis(text: string): string[] {
+  // Fast exit for the vast majority of messages: no character outside the basic ranges.
+  let candidate = false;
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) >= 0x203c) {
+      candidate = true;
+      break;
+    }
+  }
+  if (!candidate) return [];
   const found = text.match(EMOJI_RE);
   if (!found) return [];
   return found.map((e) => e.replace(MODIFIER_RE, ''));
@@ -54,7 +63,19 @@ export function laughFamily(word: string): LaughFamily | null {
   if (len < 2 || len > 200) return null;
   const c0 = word.charCodeAt(0);
   // Fast exit: laughs start with a, e, h, i, j, k, l, s or x.
-  if (c0 < 97 || c0 > 120) return null;
+  if (
+    c0 !== 106 &&
+    c0 !== 104 &&
+    c0 !== 97 &&
+    c0 !== 120 &&
+    c0 !== 108 &&
+    c0 !== 101 &&
+    c0 !== 105 &&
+    c0 !== 107 &&
+    c0 !== 115
+  ) {
+    return null;
+  }
 
   if (len >= 4) {
     if (/^[jha]+$/.test(word) && countChar(word, 'a') >= 2) {
@@ -98,6 +119,11 @@ export function laughLabel(family: LaughFamily, original: string): string {
 
 /** True if a text kind message is written in capitals (at least 5 letters, none lower-case). */
 export function isShout(text: string): boolean {
+  // Fast exit: any plain lower-case letter rules it out.
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c >= 97 && c <= 122) return false;
+  }
   if (text === text.toLowerCase()) return false;
   if (text !== text.toUpperCase()) return false;
   const letters = text.match(/\p{Lu}/gu);

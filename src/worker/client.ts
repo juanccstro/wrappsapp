@@ -11,7 +11,7 @@ type RequestBody = WorkerRequest extends infer R
 
 export type WrappedClient = {
   /** Parses a .txt export inside the Worker. */
-  loadFile(file: Blob): Promise<ChatSummary>;
+  loadFile(file: Blob, fileName?: string): Promise<ChatSummary>;
   loadText(text: string): Promise<ChatSummary>;
   analyze(period: PeriodKind): Promise<AnalysisResult>;
   /** Forgets the chat and stops the Worker. */
@@ -45,7 +45,7 @@ export function createWrappedClient(): WrappedClient {
     });
 
   return {
-    loadFile: (file) => call({ type: 'load', file }),
+    loadFile: (file, fileName) => call({ type: 'load', file, fileName }),
     loadText: (text) => call({ type: 'loadText', text }),
     analyze: (period) => call({ type: 'analyze', period }),
     dispose() {

@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`WrappedResult > keeps the slide order stable (snapshot) 1`] = `
+{
+  "seed": "6e4f6357956b928cfbe3210c37796842ebd51ecb563bbec7208448572b927406",
+  "slides": [
+    "intro",
+    "total",
+    "clock",
+    "busiestDay",
+    "laughs",
+    "words",
+    "emojis",
+    "quiz:1",
+    "race",
+    "graph",
+    "replySpeed",
+    "streakSilence",
+    "starterVsMystery",
+    "owls",
+    "ranking:monologue",
+    "ranking:podcast",
+    "quiz:2",
+    "people",
+    "vibe",
+    "summary",
+  ],
+  "theme": {
+    "background": "blobs",
+    "palette": 4,
+  },
+  "vibe": "risas",
+}
+`;
