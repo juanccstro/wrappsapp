@@ -38,7 +38,8 @@ export type AnalysisResult = {
   wrapped: WrappedResult;
 };
 
-export type SessionErrorCode = ChatParseErrorCode | 'no_chat_loaded' | 'unexpected';
+export type SessionErrorCode =
+  ChatParseErrorCode | 'no_chat_loaded' | 'bad_zip' | 'zip_without_chat' | 'unexpected';
 
 export class SessionError extends Error {
   readonly code: SessionErrorCode;
@@ -79,6 +80,7 @@ export function createSession() {
         chat = parser.finish();
         chatName = detectChatName(chat, fileName);
       } catch (err) {
+        if (err instanceof SessionError) throw err;
         throw new SessionError(err instanceof ChatParseError ? err.code : 'unexpected');
       }
       return summarize(chat);

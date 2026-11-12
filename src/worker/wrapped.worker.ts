@@ -1,26 +1,17 @@
 /// <reference lib="webworker" />
 import type { WorkerRequest, WorkerResponse } from './protocol';
+import { readExport } from './readExport';
 import { createSession, SessionError } from './session';
 
 const ctx = self as unknown as DedicatedWorkerGlobalScope;
 const session = createSession();
 
-/** Reads a file block by block, so a huge export never has to be one giant string. */
-async function* readText(file: Blob): AsyncGenerator<string> {
-  const reader = file.stream().pipeThrough(new TextDecoderStream('utf-8')).getReader();
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) return;
-    yield value;
-  }
-}
-
 async function handle(request: WorkerRequest) {
   switch (request.type) {
     case 'load':
-      return session.load(readText(request.file), request.fileName);
+      return session.load(readExport(request.file), request.fileName);
     case 'loadText':
-      return session.load([request.text]);
+      return session.load([request.text], request.fileName);
     case 'analyze':
       return session.analyze(request.period);
     case 'clear':

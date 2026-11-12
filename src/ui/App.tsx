@@ -1,17 +1,34 @@
-import { es } from '../i18n/es';
-import { LockIcon } from './components/icons';
+import { PhoneFrame } from './components/Shell';
+import { Landing } from './landing/Landing';
+import { Loading } from './loading/Loading';
+import { PeriodSelect } from './period/PeriodSelect';
+import { StoryPlayer } from './story/StoryPlayer';
+import { Upload } from './upload/Upload';
+import { useWrappsapp } from './useWrappsapp';
 
 export function App() {
+  const { screen, goUpload, loadFile, loadDemo, start, reset } = useWrappsapp();
+
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
-      <h1 className="text-5xl font-black tracking-tight">{es.app.name}</h1>
-      <p className="text-xl opacity-90">{es.app.tagline}</p>
-      <p className="max-w-sm text-sm opacity-70">{es.app.comingSoon}</p>
-      <p className="flex items-center gap-2 text-sm font-semibold">
-        <LockIcon />
-        {es.app.privacy}
-      </p>
-      <footer className="mt-8 text-xs opacity-60">{es.app.disclaimer}</footer>
-    </main>
+    <PhoneFrame>
+      {screen.name === 'landing' && <Landing onStart={goUpload} onDemo={loadDemo} />}
+      {screen.name === 'upload' && <Upload error={screen.error} onFile={loadFile} onBack={reset} />}
+      {screen.name === 'loading' && <Loading />}
+      {screen.name === 'period' && (
+        <PeriodSelect
+          summary={screen.summary}
+          onStart={(period) => start(period)}
+          onDiscard={reset}
+        />
+      )}
+      {screen.name === 'story' && (
+        <StoryPlayer
+          key={screen.wrapped.seed}
+          wrapped={screen.wrapped}
+          isDemo={screen.isDemo}
+          onClose={reset}
+        />
+      )}
+    </PhoneFrame>
   );
 }

@@ -1,14 +1,96 @@
+@import '@fontsource-variable/unbounded';
+@import '@fontsource-variable/space-grotesk';
 @import 'tailwindcss';
 
+@theme {
+  --font-display: 'Unbounded Variable', system-ui, sans-serif;
+  --font-sans: 'Space Grotesk Variable', system-ui, sans-serif;
+}
+
+/* Brand palette. Each Wrapped overrides these variables with its own palette. */
 :root {
-  --wr-bg: #0d0221;
-  --wr-fg: #ffffff;
-  --wr-accent: #ff3d9a;
+  --wr-bg: #12062b;
+  --wr-ink: #ffffff;
+  --wr-a: #ff4d8d;
+  --wr-b: #ffb443;
+  --wr-c: #7c5cff;
+  --wr-d: #22d3c5;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
 }
 
 body {
   margin: 0;
   background: var(--wr-bg);
-  color: var(--wr-fg);
-  font-family: system-ui, sans-serif;
+  color: var(--wr-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--wr-b);
+  outline-offset: 3px;
+}
+
+/* Backdrop blobs: only transform is animated. */
+@keyframes wr-drift-a {
+  0%,
+  100% {
+    transform: translate3d(-10%, -8%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(12%, 10%, 0) scale(1.25);
+  }
+}
+@keyframes wr-drift-b {
+  0%,
+  100% {
+    transform: translate3d(10%, 12%, 0) scale(1.15);
+  }
+  50% {
+    transform: translate3d(-14%, -6%, 0) scale(0.9);
+  }
+}
+.wr-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.55;
+  will-change: transform;
+}
+.wr-blob-a {
+  animation: wr-drift-a 18s ease-in-out infinite;
+}
+.wr-blob-b {
+  animation: wr-drift-b 22s ease-in-out infinite;
+}
+.wr-blob-c {
+  animation: wr-drift-a 26s ease-in-out infinite reverse;
+}
+
+@keyframes wr-pulse-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wr-blob,
+  .wr-eq-bar {
+    animation: none !important;
+  }
 }
