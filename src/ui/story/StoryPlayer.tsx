@@ -190,8 +190,9 @@ export function StoryPlayer({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const onControl = target?.closest('button, a, input') !== null;
+      // The target is not always an element (it can be the window itself).
+      const onControl =
+        event.target instanceof Element && event.target.closest('button, a, input') !== null;
       if (event.key === 'ArrowRight') go(1);
       else if (event.key === 'ArrowLeft') go(-1);
       else if (event.key === 'Escape') onClose();
