@@ -24,6 +24,14 @@ describe('line formats from the spec', () => {
     ['BOM', '\ufeff13/11/26, 17:03 - Juan: hola', '2026-11-13T17:03'],
     ['12 AM is midnight', '11/13/26, 12:30 AM - Juan: zzz', '2026-11-13T00:30'],
     ['12 PM is noon', '11/13/26, 12:30 PM - Juan: lunch', '2026-11-13T12:30'],
+    ['ES 12h without spaces', '13/11/26, 5:03 p.m. - Juan: hola', '2026-11-13T17:03'],
+    ['ES 12h uppercase', '13/11/26, 5:03 A. M. - Juan: hola', '2026-11-13T05:03'],
+    ['iOS without seconds', '[13/11/26, 17:03] Juan: hola', '2026-11-13T17:03'],
+    ['iOS without comma', '[13/11/26 17:03:45] Juan: hola', '2026-11-13T17:03'],
+    ['iOS ES 12h', '[13/11/26, 5:03:45 p. m.] Juan: hola', '2026-11-13T17:03'],
+    ['4-digit year, no comma', '13/11/2026 17:03 - Juan: hola', '2026-11-13T17:03'],
+    ['dotted time', '13/11/26, 17.03 - Juan: hola', '2026-11-13T17:03'],
+    ['en dash', '13/11/26, 17:03 – Juan: hola', '2026-11-13T17:03'],
   ])('%s', (_name, line, minuteKey) => {
     const { message, chat } = one(line);
     expect(message.minuteKey).toBe(minuteKey);
@@ -212,4 +220,20 @@ describe('streaming and performance', () => {
     // other test files run at the same time and share the CPU.
     expect(elapsed).toBeLessThan(8000);
   }, 30_000);
+});
+
+describe('markers that are not text', () => {
+  it.each([
+    ['view once (Android)', 'null'],
+    ['waiting (ES)', 'Esperando el mensaje. Es posible que tarde un poco.'],
+    ['waiting (EN)', 'Waiting for this message. This may take a while.'],
+  ])('%s is content without words', (_name, body) => {
+    const { message } = one(`13/11/26, 17:03 - Juan: ${body}`);
+    expect(message.kind).toBe('media');
+    expect(message.text).toBe('');
+  });
+
+  it('a message that only mentions "null" in a sentence is still text', () => {
+    expect(one('13/11/26, 17:03 - Juan: es null o undefined').message.kind).toBe('text');
+  });
 });

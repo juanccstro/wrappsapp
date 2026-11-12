@@ -1,8 +1,14 @@
 import { useMemo } from 'react';
 import type { BackgroundId } from '../../core';
 import { createRng } from '../../core/random/rng';
+import { Illustration } from './Illustration';
 
-type Props = { kind: BackgroundId; seed: string };
+type Props = {
+  kind: BackgroundId;
+  seed: string;
+  /** Position of the slide: picks its illustration. */
+  position: number;
+};
 
 const GRAIN =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>\")";
@@ -12,7 +18,7 @@ const GRAIN =
  * and so are the positions, so the same chat always looks the same. Only transform and
  * opacity are animated; everything stops with prefers-reduced-motion (see index.css).
  */
-export function Background({ kind, seed }: Props) {
+export function Background({ kind, seed, position }: Props) {
   const items = useMemo(() => {
     const rng = createRng(seed, `fx:background:${kind}`);
     return Array.from({ length: kind === 'stars' ? 46 : 9 }, (_, i) => ({
@@ -106,6 +112,8 @@ export function Background({ kind, seed }: Props) {
           ))}
         </svg>
       )}
+
+      <Illustration seed={seed} position={position} />
 
       {/* Scrim for text contrast, then film grain. */}
       <div className="absolute inset-0 bg-black/25" />

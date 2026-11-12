@@ -190,3 +190,38 @@ button {
     transform: translate3d(9px, 0, 0);
   }
 }
+
+/* Slide illustrations (see Illustration.tsx). */
+@keyframes wr-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-12deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+@keyframes wr-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+@keyframes wr-float {
+  0%,
+  100% {
+    transform: translate3d(0, -10px, 0);
+  }
+  50% {
+    transform: translate3d(0, 12px, 0);
+  }
+}
+@keyframes wr-wave-slide {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}

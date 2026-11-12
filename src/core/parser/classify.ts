@@ -22,6 +22,11 @@ const ATTACHED_SUFFIX_RE =
 const POLL_RE = /^(?:(ENCUESTA)|POLL):/;
 const LOCATION_RE = /^(?:(ubicación)|location): https?:\/\//i;
 const LIVE_LOCATION_RE = /^(?:(ubicación en tiempo real compartida)|live location shared)\.?$/i;
+// Android writes "null" for a "view once" photo or video. A message that never finished
+// downloading is exported as a notice instead of its text. Both are content without words.
+const VIEW_ONCE_RE = /^null$/;
+const WAITING_RE =
+  /^(?:(esperando (?:el|este) mensaje\. es posible que tarde un poco|esperando (?:el|este) mensaje\. esto puede tomar tiempo)|waiting for this message\. (?:this may take a while|check your phone))\.?$/i;
 const CALL_RE =
   /^(?:((?:video)?llamada(?: de voz| grupal)? perdida)|missed (?:voice |video |group )*call)(?:[.,][^\n]*)?$/i;
 
@@ -63,7 +68,7 @@ function asMedia(
   type: MediaType | 'contact',
   text: string,
   edited: boolean,
-  lang: Lang,
+  lang: Lang | undefined,
 ): ClassifiedBody {
   if (type === 'contact') return { kind: 'contact', text, edited, lang };
   return { kind: 'media', mediaType: type, text, edited, lang };
@@ -100,6 +105,10 @@ export function classifyBody(input: string): ClassifiedBody {
       const type = mediaTypeFromOmittedLabel(m[2] ?? '', m[1] !== undefined);
       if (type) return asMedia(type, '', edited, m[3]?.toLowerCase() === 'omitted' ? 'en' : 'es');
     }
+
+    if (VIEW_ONCE_RE.test(body)) return asMedia('media_unknown', '', edited, lang);
+    m = WAITING_RE.exec(body);
+    if (m) return asMedia('media_unknown', '', edited, langOf(m[1]));
 
     m = LIVE_LOCATION_RE.exec(body);
     if (m) return { kind: 'location', text: '', edited, lang: langOf(m[1]) };

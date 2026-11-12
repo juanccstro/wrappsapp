@@ -355,7 +355,7 @@ export function StoryPlayer({
         animate={isCurrent ? 'center' : 'exit'}
         transition={{ duration: reduced || fast ? 0.2 : EXIT_MS / 1000, ease }}
       >
-        <Background kind={wrapped.theme.background} seed={wrapped.seed} />
+        <Background kind={wrapped.theme.background} seed={wrapped.seed} position={at} />
         <div className="relative h-full">
           <SlideView slide={shown} ctx={ctx} />
         </div>

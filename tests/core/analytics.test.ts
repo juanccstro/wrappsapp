@@ -242,3 +242,26 @@ describe('text details', () => {
     expect(r.totals.messages).toBe(300_000);
   }, 30_000);
 });
+
+describe('text helpers', () => {
+  it('counts links with or without the scheme, and never as words', async () => {
+    const { splitLinks } = await import('../../src/core/analytics/text');
+    const { links, rest } = splitLinks('mira https://a.com/x y www.b.es/y vale');
+    expect(links).toBe(2);
+    expect(rest).not.toMatch(/a\.com|b\.es/);
+  });
+
+  it.each([
+    ['jajaja', 'ja'],
+    ['jajaj', 'ja'],
+    ['jsjsjs', 'js'],
+    ['jajsjsja', 'js'],
+    ['jejeje', 'je'],
+    ['xddd', 'xd'],
+    ['jaula', null],
+    ['hola', null],
+  ])('"%s" is laughter of family %s', async (word, family) => {
+    const { laughFamily } = await import('../../src/core/analytics/text');
+    expect(laughFamily(word)).toBe(family);
+  });
+});

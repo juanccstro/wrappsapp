@@ -143,6 +143,15 @@ type GraphNode = SimulationNodeDatum & { idx: number };
  * Who replies to whom. Layout by d3-force, computed once (the simulation is deterministic)
  * and then drawn in: thicker lines mean more replies, the strongest pair is highlighted.
  */
+/** Short label: the first word of a name (all of it if another person shares that word). */
+function shortName(name: string, all: string[]): string {
+  const firstOf = (n: string) => n.trim().split(/\s+/)[0] ?? n;
+  const first = firstOf(name);
+  const label = all.filter((n) => firstOf(n) === first).length > 1 ? name.trim() : first;
+  const chars = Array.from(label);
+  return chars.length > 12 ? `${chars.slice(0, 11).join('')}…` : label;
+}
+
 export function ReplyGraph({
   matrix,
   pair,
@@ -188,7 +197,8 @@ export function ReplyGraph({
       1,
       ...graphNodes.map((n) => Math.max(Math.abs(n.x ?? 0), Math.abs(n.y ?? 0))),
     );
-    const scale = 108 / reach;
+    // Leave room for the names under the avatars.
+    const scale = 100 / reach;
     for (const n of graphNodes) {
       n.x = (n.x ?? 0) * scale;
       n.y = (n.y ?? 0) * scale;
@@ -203,7 +213,12 @@ export function ReplyGraph({
   };
 
   return (
-    <svg viewBox="-150 -150 300 300" className="mx-auto w-full max-w-80" aria-hidden="true">
+    <svg
+      viewBox="-150 -140 300 300"
+      overflow="visible"
+      className="mx-auto w-full max-w-80"
+      aria-hidden="true"
+    >
       {links.map((l, i) => {
         const a = nodes[l.source] as GraphNode;
         const b = nodes[l.target] as GraphNode;
@@ -231,18 +246,30 @@ export function ReplyGraph({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.2 + i * 0.07 }}
         >
-          <foreignObject x={(n.x ?? 0) - 22} y={(n.y ?? 0) - 22} width="44" height="44">
-            <Avatar idx={n.idx} name={ctx.name(n.idx)} size={44} />
-          </foreignObject>
+          <Avatar
+            idx={n.idx}
+            name={ctx.name(n.idx)}
+            size={44}
+            x={(n.x ?? 0) - 22}
+            y={(n.y ?? 0) - 22}
+          />
           <text
             x={n.x}
-            y={(n.y ?? 0) + 33}
+            y={(n.y ?? 0) + 34}
             textAnchor="middle"
-            fontSize="10"
+            dominantBaseline="middle"
+            fontSize="10.5"
             fontWeight="700"
             fill="white"
+            stroke="rgba(0,0,0,0.45)"
+            strokeWidth="3"
+            strokeLinejoin="round"
+            paintOrder="stroke"
           >
-            {ctx.name(n.idx).slice(0, 14)}
+            {shortName(
+              ctx.name(n.idx),
+              nodes.map((o) => ctx.name(o.idx)),
+            )}
           </text>
         </motion.g>
       ))}

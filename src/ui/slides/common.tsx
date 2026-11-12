@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import type { Ranked, WrappedResult } from '../../core';
 import { formatNumber } from '../../core/templates/es/format';
 import type { ShareTarget } from '../share/share';
@@ -39,13 +39,11 @@ export function Title({ text, className = '' }: { text: string; className?: stri
       className={`wr-shadow font-display leading-[1.08] font-black text-balance ${size} ${className}`}
     >
       {text.split(' ').map((word, i) => (
-        <span
-          key={`${word}-${i}`}
-          className="inline-block overflow-hidden pb-[0.12em] align-bottom"
-        >
+        // No overflow mask here: it cut the text shadow into visible boxes behind the words.
+        <span key={`${word}-${i}`} className="inline-block pb-[0.12em] align-bottom">
           <motion.span
             className="inline-block"
-            initial={{ y: '110%', opacity: 0 }}
+            initial={{ y: '55%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 170, damping: 18, delay: 0.08 + i * 0.06 }}
           >
@@ -149,12 +147,28 @@ function initialsOf(name: string): string {
 }
 
 /** Procedural avatar: initials on palette shapes. Photos are never used. */
-export function Avatar({ idx, name, size = 56 }: { idx: number; name: string; size?: number }) {
+export function Avatar({
+  idx,
+  name,
+  size = 56,
+  x,
+  y,
+}: {
+  idx: number;
+  name: string;
+  size?: number;
+  /** Position when nested inside another SVG (no foreignObject: Safari misplaces it). */
+  x?: number;
+  y?: number;
+}) {
   const base = AVATAR_COLORS[idx % 4] as string;
   const accent = AVATAR_COLORS[(idx + 2) % 4] as string;
   const shape = idx % 3;
+  const clip = `wr-av-${useId().replace(/:/g, '')}`;
   return (
     <svg
+      x={x}
+      y={y}
       width={size}
       height={size}
       viewBox="0 0 64 64"
@@ -162,22 +176,30 @@ export function Avatar({ idx, name, size = 56 }: { idx: number; name: string; si
       aria-label={name}
       className="shrink-0 drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)]"
     >
-      <circle cx="32" cy="32" r="30" fill={base} stroke="white" strokeWidth="3" />
-      {shape === 0 && <circle cx="48" cy="18" r="16" fill={accent} opacity="0.85" />}
-      {shape === 1 && (
-        <rect
-          x="-6"
-          y="38"
-          width="44"
-          height="44"
-          rx="8"
-          fill={accent}
-          opacity="0.85"
-          transform="rotate(-18 16 60)"
-        />
-      )}
-      {shape === 2 && <path d="M32 2 62 62H2Z" fill={accent} opacity="0.55" />}
-      <circle cx="32" cy="32" r="30" fill="rgba(0,0,0,0.18)" />
+      <defs>
+        <clipPath id={clip}>
+          <circle cx="32" cy="32" r="30" />
+        </clipPath>
+      </defs>
+      <circle cx="32" cy="32" r="30" fill={base} />
+      {/* Decorative shapes stay inside the circle. */}
+      <g clipPath={`url(#${clip})`}>
+        {shape === 0 && <circle cx="48" cy="18" r="16" fill={accent} opacity="0.85" />}
+        {shape === 1 && (
+          <rect
+            x="-6"
+            y="38"
+            width="44"
+            height="44"
+            rx="8"
+            fill={accent}
+            opacity="0.85"
+            transform="rotate(-18 16 60)"
+          />
+        )}
+        {shape === 2 && <path d="M32 2 62 62H2Z" fill={accent} opacity="0.55" />}
+      </g>
+      <circle cx="32" cy="32" r="30" fill="rgba(0,0,0,0.18)" stroke="white" strokeWidth="3" />
       <text
         x="32"
         y="33"

@@ -1,9 +1,10 @@
-const URL_RE = /https?:\/\/\S+/gi;
+// Links as people write them: with the scheme or starting with www.
+const URL_RE = /(?:https?:\/\/|www\.)\S+/gi;
 const WORD_RE = /[\p{L}\p{N}]+/gu;
 
 /** Number of links and the text without them (so URL fragments do not count as words). */
 export function splitLinks(text: string): { links: number; rest: string } {
-  if (text.indexOf('http') === -1) return { links: 0, rest: text };
+  if (text.indexOf('http') === -1 && text.indexOf('www.') === -1) return { links: 0, rest: text };
   let links = 0;
   const rest = text.replace(URL_RE, () => {
     links++;
@@ -47,7 +48,7 @@ export function extractEmojis(text: string): string[] {
 }
 
 /** Emojis that count as laughter in the "jajómetro". */
-export const LAUGH_EMOJIS: ReadonlySet<string> = new Set(['😂', '🤣', '💀']);
+export const LAUGH_EMOJIS: ReadonlySet<string> = new Set(['😂', '🤣', '💀', '😆', '😹']);
 
 export type LaughFamily = 'ja' | 'ha' | 'je' | 'he' | 'ji' | 'js' | 'xd' | 'lol';
 
@@ -91,7 +92,8 @@ export function laughFamily(word: string): LaughFamily | null {
       if (h >= 2) return 'he';
     }
     if (/^[ji]+$/.test(word) && countChar(word, 'j') >= 2 && countChar(word, 'i') >= 2) return 'ji';
-    if (/^[jsk]+$/.test(word) && countChar(word, 'j') >= 2 && countChar(word, 's') >= 1)
+    // "jsjsjs", also mixed with a's when typed in a hurry ("jajsjsja").
+    if (/^[jska]+$/.test(word) && countChar(word, 'j') >= 2 && countChar(word, 's') >= 1)
       return 'js';
   }
   if (/^x+d+$/.test(word)) return 'xd';
