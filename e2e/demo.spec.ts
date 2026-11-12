@@ -75,3 +75,43 @@ test('a file that is not a chat gets a friendly explanation', async ({ page }) =
     timeout: 15_000,
   });
 });
+
+test('a quiz can be answered and never holds the story', async ({ page }) => {
+  const problems: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') problems.push(message.text());
+  });
+  page.on('pageerror', (error) => problems.push(error.message));
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Ver demo' }).click();
+  const progress = page.getByRole('progressbar');
+  await expect(progress).toBeVisible({ timeout: 20_000 });
+
+  // Walk forward until the first quiz (its options are toggle buttons).
+  const options = page.locator('section button[aria-pressed]');
+  for (let i = 0; i < 20 && (await options.count()) === 0; i++) {
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(150);
+  }
+  expect(await options.count()).toBeGreaterThanOrEqual(2);
+  const quizAt = Number(await progress.getAttribute('aria-valuenow'));
+
+  // Answer with a tap, as on a phone.
+  await options.first().tap();
+  await expect(page.locator('section [role=status]')).not.toBeEmpty();
+  await expect(progress).toHaveAttribute('aria-valuenow', String(quizAt));
+
+  // The result stays a few seconds and the story moves on by itself…
+  await expect(progress).toHaveAttribute('aria-valuenow', String(quizAt + 1), { timeout: 8_000 });
+
+  // …and going back, a tap anywhere (even over the options) continues.
+  await page.keyboard.press('ArrowLeft');
+  await expect(progress).toHaveAttribute('aria-valuenow', String(quizAt));
+  const size = page.viewportSize();
+  if (!size) throw new Error('no viewport');
+  await page.touchscreen.tap(size.width * 0.6, size.height * 0.55);
+  await expect(progress).toHaveAttribute('aria-valuenow', String(quizAt + 1));
+
+  expect(problems, 'no console errors').toEqual([]);
+});

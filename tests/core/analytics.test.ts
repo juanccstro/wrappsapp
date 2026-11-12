@@ -37,7 +37,7 @@ describe('global analytics', () => {
     expect(a.busiestDay).toEqual({
       day: '2026-03-01',
       messages: 7,
-      keywords: ['días', 'equipo', 'genial', 'nadie', 'vemos'],
+      keywords: ['días', 'equipo', 'genial', 'nadie', 'vemos', 'viene'],
     });
   });
 

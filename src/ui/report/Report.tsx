@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Analytics, PersonStats, WrappedResult } from '../../core';
+import { nameWords, withoutNames } from '../../core/wrapped/names';
 import {
   formatDay,
   formatDuration,
@@ -141,10 +142,12 @@ function PersonSheet({
   person,
   wrapped,
   mediaTypesKnown,
+  names,
 }: {
   person: PersonStats;
   wrapped: WrappedResult;
   mediaTypesKnown: boolean;
+  names: Set<string>;
 }) {
   const name = (idx: number) => wrapped.participants[idx]?.name ?? '';
   const people = wrapped.slides.find((s) => s.kind === 'people');
@@ -163,7 +166,12 @@ function PersonSheet({
     [t.person.laughs, formatNumber(person.laughs)],
     [t.person.questions, formatNumber(person.questions)],
     [t.person.emoji, person.favoriteEmoji],
-    [t.person.word, person.signatureWord],
+    [
+      t.person.word,
+      person.signatureWord !== null && names.has(person.signatureWord)
+        ? null
+        : person.signatureWord,
+    ],
     [t.person.laugh, person.signatureLaugh],
     [t.person.favorite, person.favoritePerson === null ? null : name(person.favoritePerson)],
     [t.person.audios, mediaTypesKnown ? formatNumber(person.audios) : null],
@@ -207,6 +215,8 @@ function PersonSheet({
  */
 export function Report({ wrapped, analytics: a, onBack, onClose }: Props) {
   const totals = a.totals;
+  const names = nameWords(wrapped.participants.map((p) => p.name));
+  const topWords = withoutNames(a.topWords, names);
   const ranking = a.people.slice().sort((x, y) => y.messages - x.messages || x.idx - y.idx);
   const maxMessages = Math.max(1, ...ranking.map((p) => p.messages));
   const name = (idx: number) => wrapped.participants[idx]?.name ?? '';
@@ -321,15 +331,16 @@ export function Report({ wrapped, analytics: a, onBack, onClose }: Props) {
               person={p}
               wrapped={wrapped}
               mediaTypesKnown={a.mediaTypesKnown}
+              names={names}
             />
           ))}
         </ul>
       </Section>
 
-      {a.topWords.length > 0 && (
+      {topWords.length > 0 && (
         <Section title={t.words}>
           <ul className="flex flex-wrap gap-2">
-            {a.topWords.slice(0, 20).map((w) => (
+            {topWords.slice(0, 20).map((w) => (
               <li key={w.key} className="rounded-full bg-white/12 px-3 py-1 text-sm font-semibold">
                 {w.key} <span className="text-white/65 tabular-nums">{formatNumber(w.count)}</span>
               </li>

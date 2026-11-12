@@ -9,9 +9,23 @@ export function stripInvisible(input: string): string {
   return input.replace(INVISIBLE_RE, '').replace(ODD_SPACE_RE, ' ');
 }
 
+// "@⁨Name⁩": a mention, wrapped in the isolate marks U+2068 … U+2069.
+const MENTION_RE = new RegExp(
+  '@' +
+    String.fromCodePoint(0x2068) +
+    '[^' +
+    String.fromCodePoint(0x2069) +
+    '\\n]{1,80}' +
+    String.fromCodePoint(0x2069),
+  'g',
+);
+/** What a mention becomes: no letters, so it is never counted as a word. */
+export const MENTION_TOKEN = '@~';
+
 /** Invisible characters out, Unicode NFC, trimmed. Line breaks are preserved. */
 export function normalizeText(input: string): string {
-  return stripInvisible(input).normalize('NFC').trim();
+  const text = input.indexOf('@') === -1 ? input : input.replace(MENTION_RE, MENTION_TOKEN);
+  return stripInvisible(text).normalize('NFC').trim();
 }
 
 /** True if the raw text starts with a left-to-right / right-to-left mark. */

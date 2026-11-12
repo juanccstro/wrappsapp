@@ -160,6 +160,30 @@ describe('WrappedResult', () => {
     expect(levelled.wrapped.slides.map((s) => s.kind)).not.toContain('images');
   });
 
+  it("never shows people's names as the most used words", async () => {
+    const lines: string[] = [];
+    for (let i = 0; i < 30; i++) {
+      const minute = String(i).padStart(2, '0');
+      lines.push(`${1 + (i % 20)}/2/26, 10:${minute} - Juan: marta marta vienes al cine cine`);
+      lines.push(
+        `${1 + (i % 20)}/2/26, 11:${minute} - Marta: juan juan compra palomitas palomitas`,
+      );
+      lines.push(`${1 + (i % 20)}/2/26, 12:${minute} - Lucía: juan y marta siempre con el cine`);
+    }
+    const { wrapped: w, analytics } = await wrap(parseChat(lines.join('\n')));
+    // The statistics still count them (they do not depend on contact names)…
+    expect(analytics.topWords.map((x) => x.key)).toContain('juan');
+    // …but nothing shown to people does.
+    const words = w.slides.find((s) => s.kind === 'words');
+    if (words?.kind !== 'words') throw new Error('no words slide');
+    const shown = [...words.data.words, ...words.data.bigrams].map((x) => x.key).join(' ');
+    expect(shown).toContain('cine');
+    expect(shown).not.toMatch(/juan|marta|lucía/);
+    expect(words.title + words.body).not.toMatch(/juan|marta|lucía/i);
+    const day = w.slides.find((s) => s.kind === 'busiestDay');
+    if (day?.kind === 'busiestDay') expect(day.data.keywords.join(' ')).not.toMatch(/juan|marta/);
+  });
+
   it('makes quizzes that can be answered', async () => {
     const { wrapped: w } = await wrap(demoChat, 'year');
     const quizzes = w.slides.filter((s) => s.kind === 'quiz');

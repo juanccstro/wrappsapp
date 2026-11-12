@@ -124,6 +124,34 @@ describe('message kinds', () => {
   });
 });
 
+describe('names never leak into the text', () => {
+  it('keeps the author out of the message in every format', () => {
+    const lines = [
+      '13/11/26, 17:03 - Juan: primero',
+      '[13/11/26, 17:04:05] Juan: segundo',
+      '13/11/2026 17:05 - Juan: tercero',
+      '13/11/26, 5:06 p. m. - Juan: cuarto',
+      '13/11/26, 17:07 – Juan: quinto',
+    ];
+    for (const line of lines) {
+      const chat = parseChat(line);
+      expect(chat.messages).toHaveLength(1);
+      expect(chat.participants.map((p) => p.displayName)).toEqual(['Juan']);
+      expect(chat.messages[0]?.text).not.toContain('Juan');
+      expect(chat.messages[0]?.text).not.toMatch(/\d/);
+    }
+  });
+
+  it('turns mentions into a neutral token instead of the contact name', () => {
+    const fsi = String.fromCodePoint(0x2068);
+    const pdi = String.fromCodePoint(0x2069);
+    const chat = parseChat(
+      `[13/11/26, 17:03:45] Marta: oye @${fsi}Juan Trabajo${pdi} y @${fsi}~ Lucía${pdi} venís?`,
+    );
+    expect(chat.messages[0]?.text).toBe('oye @~ y @~ venís?');
+  });
+});
+
 describe('individual chats and names', () => {
   it('detects a two-person chat', () => {
     const chat = parseChat(

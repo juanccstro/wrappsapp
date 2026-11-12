@@ -293,7 +293,11 @@ function Quiz({ slide, ctx }: Of<'quiz'>) {
     <Layout>
       <Title text={slide.title} />
       {!answered && <Body text={slide.body} delay={0.4} />}
-      <div className="grid grid-cols-2 gap-3" data-no-nav>
+      {/* Once answered, taps go through to the story: tap anywhere to continue. */}
+      <div
+        className={`grid grid-cols-2 gap-3 ${answered ? 'pointer-events-none' : ''}`}
+        data-no-nav={answered ? undefined : true}
+      >
         {slide.data.options.map((idx, i) => {
           const isAnswer = idx === slide.data.answer;
           const state = !answered
@@ -305,10 +309,13 @@ function Quiz({ slide, ctx }: Of<'quiz'>) {
             <motion.button
               key={idx}
               type="button"
-              disabled={answered}
+              aria-disabled={answered}
+              tabIndex={answered ? -1 : 0}
               aria-pressed={idx === chosen}
-              onClick={() => ctx.onAnswer(slide.id, idx)}
-              className={`flex cursor-pointer flex-col items-center gap-2 rounded-3xl border-2 px-2 py-4 text-sm font-bold transition-colors disabled:cursor-default ${state}`}
+              onClick={() => {
+                if (!answered) ctx.onAnswer(slide.id, idx);
+              }}
+              className={`flex cursor-pointer flex-col items-center gap-2 rounded-3xl border-2 px-2 py-4 text-sm font-bold transition-colors ${state}`}
               initial={{ opacity: 0, scale: 0.7 }}
               animate={{ opacity: 1, scale: answered && isAnswer ? 1.06 : 1 }}
               transition={{

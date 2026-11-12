@@ -44,10 +44,16 @@ type Props = {
 };
 
 /** The people slide lasts as long as its cards need. */
+const QUIZ_MS = 12_000;
+/** How long the answer of a quiz stays on screen before moving on. */
+const QUIZ_REVEAL_MS = 3800;
+
 const durationOf = (slide: Slide) =>
   slide.kind === 'people'
     ? Math.max(slide.durationMs, slide.data.cards.length * CARD_MS + 1200)
-    : slide.durationMs;
+    : slide.kind === 'quiz'
+      ? QUIZ_MS
+      : slide.durationMs;
 
 type Motion = { initial: Variant; exit: Variant };
 
@@ -114,9 +120,8 @@ export function StoryPlayer({
 
   const slide = slides[clampIndex(index, count)];
   const isLast = index >= count - 1;
-  // A quiz waits for an answer before the clock starts.
-  const waitingForAnswer = slide?.kind === 'quiz' && answers[slide.id] === undefined;
-  const running = !userPaused && !holding && !hidden && !waitingForAnswer && !isLast;
+  const running = !userPaused && !holding && !hidden && !isLast;
+  const quizAnswered = slide?.kind === 'quiz' && answers[slide.id] !== undefined;
 
   const share = useShare(wrapped);
   const { run: runShare, status: shareStatus, make: makePoster } = share;
@@ -161,6 +166,14 @@ export function StoryPlayer({
       bar.style.transform = i < index ? 'scaleX(1)' : 'scaleX(0)';
     });
   }, [index]);
+
+  // A quiz never holds the story: it has its own (longer) time, and once answered the
+  // result stays a few seconds and the story moves on.
+  useEffect(() => {
+    if (quizAnswered && slide) {
+      elapsed.current = Math.max(elapsed.current, durationOf(slide) - QUIZ_REVEAL_MS);
+    }
+  }, [quizAnswered, slide]);
 
   // The clock. Progress is written straight to the DOM: no re-render per frame.
   useEffect(() => {
@@ -226,17 +239,16 @@ export function StoryPlayer({
   }, [audio, hidden]);
   useEffect(() => audio.setLevel(isLast ? 0.4 : 1, isLast ? 3 : 1), [audio, isLast]);
 
-  // Visual beat: a glow and a tiny bump of the slide on every beat of the track. Written
-  // straight to the DOM, like the progress bar.
+  // Visual beat: a glow on every beat of the track, written straight to the DOM like the
+  // progress bar. Only opacity changes. (It used to scale the whole slide too: on phones
+  // that re-rendered everything on every frame and made buttons move under the finger.)
   const glow = useRef<HTMLDivElement>(null);
-  const stage = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (reduced) return;
     let frame = requestAnimationFrame(function tick() {
       const beat = audio.beat();
       const pulse = beat ? Math.pow(1 - beat.phase, 3) : 0;
-      if (glow.current) glow.current.style.opacity = String(pulse * 0.2);
-      if (stage.current) stage.current.style.transform = 'scale(' + (1 + pulse * 0.016) + ')';
+      if (glow.current) glow.current.style.opacity = String(pulse * 0.22);
       frame = requestAnimationFrame(tick);
     });
     return () => cancelAnimationFrame(frame);
@@ -303,7 +315,7 @@ export function StoryPlayer({
       >
         {/* Everything that follows the beat lives outside the slides: a ref inside a slide
             is cleared when the previous slide unmounts. */}
-        <div ref={stage} className="absolute inset-0 will-change-transform">
+        <div className="absolute inset-0">
           <AnimatePresence initial={false} mode="popLayout">
             <motion.section
               key={slide.id}

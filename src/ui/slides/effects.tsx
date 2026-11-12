@@ -56,9 +56,18 @@ export function EmojiRain({
 }
 
 /** Confetti burst from a point of the screen (0–1 coordinates). */
+let cannon: confetti.CreateTypes | null = null;
+
 export function fireConfetti(x = 0.5, y = 0.6) {
-  void confetti({
-    particleCount: 90,
+  try {
+    // One shared instance on the main thread. The default instance moves the drawing to a
+    // Worker with an OffscreenCanvas, which can freeze the page on some mobile browsers.
+    cannon ??= confetti.create(undefined, { resize: true, useWorker: false });
+  } catch {
+    return; // Confetti is decoration: never let it break a slide.
+  }
+  void cannon({
+    particleCount: 60,
     spread: 75,
     startVelocity: 38,
     origin: { x, y },

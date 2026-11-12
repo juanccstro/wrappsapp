@@ -49,7 +49,7 @@ const HEADER_RE = new RegExp(
     SP +
     '?|' +
     SP +
-    '-' +
+    '[-–]' +
     SP +
     ')' +
     '([\\s\\S]*)$',

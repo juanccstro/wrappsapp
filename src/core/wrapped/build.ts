@@ -31,6 +31,7 @@ import {
 import * as pools from '../templates/es/slides';
 import { QUIZ_QUESTIONS, QUIZ_UNITS, type QuizMetric } from '../templates/es/slides';
 import { VIBES, type VIBE_SLOTS, type VibeId } from '../templates/es/vibes';
+import { nameWords, withoutNames } from './names';
 import {
   BACKGROUNDS,
   PALETTE_COUNT,
@@ -142,6 +143,10 @@ export function buildWrapped(input: WrappedInput): WrappedResult {
   const chatName = input.chatName ?? null;
   const nameOf = (idx: number) => input.participants[idx]?.displayName ?? '';
   const t = a.totals;
+  // People's names are left out of every "your words" list.
+  const names = nameWords(input.participants.map((p) => p.displayName));
+  const topWords = withoutNames(a.topWords, names);
+  const topBigrams = withoutNames(a.topBigrams, names);
   const activeDays = Math.max(1, a.range?.activeDays ?? 1);
 
   const periodLabel =
@@ -236,7 +241,7 @@ export function buildWrapped(input: WrappedInput): WrappedResult {
       polls: p.polls,
       absence: p.longestAbsenceDays,
       activeDays: p.activeDays,
-      word: p.signatureWord,
+      word: p.signatureWord !== null && names.has(p.signatureWord) ? null : p.signatureWord,
       media: p.media,
       positivePct: p.positivity === null ? null : Math.round(p.positivity * 100),
       favorite: p.favoritePerson === null ? null : nameOf(p.favoritePerson),
@@ -319,6 +324,7 @@ export function buildWrapped(input: WrappedInput): WrappedResult {
 
   if (a.busiestDay) {
     const d = a.busiestDay;
+    const keywords = d.keywords.filter((word) => !names.has(word)).slice(0, 5);
     blockA.push(
       slide(
         'busiestDay',
@@ -327,10 +333,10 @@ export function buildWrapped(input: WrappedInput): WrappedResult {
           date: formatDay(d.day),
           weekday: weekdayOfDay(d.day),
           n: d.messages,
-          kw1: d.keywords[0] ?? null,
-          kwList: d.keywords.length >= 2 ? joinList(d.keywords.slice(0, 3)) : null,
+          kw1: keywords[0] ?? null,
+          kwList: keywords.length >= 2 ? joinList(keywords.slice(0, 3)) : null,
         }),
-        { day: d.day, messages: d.messages, keywords: d.keywords },
+        { day: d.day, messages: d.messages, keywords },
       ),
     );
   }
@@ -376,9 +382,9 @@ export function buildWrapped(input: WrappedInput): WrappedResult {
     );
   }
 
-  const [w1, w2, w3] = a.topWords;
+  const [w1, w2, w3] = topWords;
   if (w1 && w2 && w3 && w1.count >= 3) {
-    const bigram = a.topBigrams[0];
+    const bigram = topBigrams[0];
     blockA.push(
       slide(
         'words',
@@ -390,7 +396,7 @@ export function buildWrapped(input: WrappedInput): WrappedResult {
           n1: w1.count,
           bigram: bigram && bigram.count >= 3 ? bigram.key : null,
         }),
-        { words: a.topWords.slice(0, 12), bigrams: a.topBigrams.slice(0, 3) },
+        { words: topWords.slice(0, 12), bigrams: topBigrams.slice(0, 3) },
       ),
     );
   }
