@@ -39,7 +39,7 @@ async function catalogPrice(stripe: Stripe, product: ProductId): Promise<string 
 /**
  * A Stripe-hosted payment page. Wrappsapp never sees card or bank details: the customer pays
  * on checkout.stripe.com, with whatever methods are enabled in the Stripe dashboard (cards,
- * Apple Pay, Google Pay, Link…). The recovery code goes into the receipt Stripe emails.
+ * Apple Pay, Google Pay, Link…). The recovery code is shown on the return page (with Managed Payments, receipts come from Link).
  */
 export async function createCheckout(input: {
   stripe: Stripe;
@@ -62,7 +62,12 @@ export async function createCheckout(input: {
               currency: 'eur',
               unit_amount: product.amount,
               tax_behavior: 'inclusive',
-              product_data: { name: product.name, description: product.description },
+              // Electronically supplied services: required when Stripe Managed Payments is on.
+              product_data: {
+                name: product.name,
+                description: product.description,
+                tax_code: 'txcd_10000000',
+              },
             },
           },
     ],

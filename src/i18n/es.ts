@@ -36,7 +36,7 @@ export const es = {
       },
       {
         title: 'Pagos',
-        text: 'Los pagos los procesa Stripe en su propia página: Wrappsapp nunca ve tu tarjeta ni tus datos bancarios. De tu compra se guarda el producto y una huella cifrada de tu email, para que puedas recuperarla en otro dispositivo con tu código. Stripe trata tus datos según su propia política de privacidad.',
+        text: 'Pagas en la página de Stripe y la venta se hace a través de Link, el servicio de pagos de Stripe, que actúa como vendedor: Wrappsapp nunca ve tu tarjeta ni tus datos bancarios. De tu compra se guarda el producto y una huella cifrada de tu email, para que puedas recuperarla en otro dispositivo con tu código. Stripe y Link tratan tus datos según su propia política de privacidad.',
       },
       {
         title: 'Sin publicidad ni seguimiento',
@@ -201,7 +201,7 @@ export const es = {
     redirecting: 'Abriendo la página de pago…',
     secure: 'Pago seguro con Stripe',
     secureDetail:
-      'Pagas en la página de Stripe, la plataforma de pagos que usan millones de tiendas. Wrappsapp nunca ve tu tarjeta ni tus datos bancarios.',
+      'Pagas en la página de Stripe, la plataforma de pagos que usan millones de tiendas, y la venta se hace a través de Link (Stripe), que te envía el recibo. Wrappsapp nunca ve tu tarjeta ni tus datos bancarios.',
     methods: 'Tarjeta · Apple Pay · Google Pay · Link',
     restoreLink: '¿Ya pagaste? Recupera tu compra',
     termsLink: 'Condiciones',
@@ -209,7 +209,7 @@ export const es = {
     back: 'Volver',
     restoreTitle: 'Recupera tu compra',
     restoreText:
-      'Escribe el email con el que pagaste y el código de recuperación. Está en el recibo que te envió Stripe.',
+      'Escribe el email con el que pagaste y el código de recuperación que te mostramos al terminar el pago.',
     email: 'Email',
     code: 'Código de recuperación',
     codePlaceholder: 'XXXX-XXXX-XXXX',
@@ -223,13 +223,13 @@ export const es = {
       'Pago completado. Vuelve a subir tu chat cuando quieras: ya está desbloqueado en este dispositivo.',
     codeTitle: 'Tu código de recuperación',
     codeText:
-      'Guárdalo: con él y tu email recuperas la compra en otro dispositivo. También te llega en el recibo de Stripe.',
+      'Guárdalo o haz una captura: con él y tu email recuperas la compra en otro dispositivo o si borras los datos del navegador.',
     copy: 'Copiar',
     copied: 'Copiado',
     continue: 'Seguir',
     pendingTitle: 'Estamos confirmando tu pago',
     pendingText:
-      'Algunos métodos de pago tardan unos minutos. En cuanto se confirme, tendrás tu compra en este dispositivo. Si no aparece, usa «Recupera tu compra» con el código del recibo.',
+      'Algunos métodos de pago tardan unos minutos. En cuanto se confirme, tendrás tu compra en este dispositivo. Si no aparece, escríbenos al contacto de Condiciones con el email del pago.',
     cancelTitle: 'No se ha completado el pago',
     cancelText: 'No se te ha cobrado nada. Puedes intentarlo otra vez cuando quieras.',
     errors: {
@@ -264,11 +264,11 @@ export const es = {
       },
       {
         title: 'Compras',
-        text: 'Pack de 3 Wrapped: 1,99 €. Acceso ilimitado para siempre: 4,99 €. Precios finales con IVA incluido. Son pagos únicos, sin suscripción ni renovaciones. El pago lo procesa Stripe; el recibo te llega por email.',
+        text: 'Pack de 3 Wrapped: 1,99 €. Acceso ilimitado para siempre: 4,99 €. Precios finales con IVA incluido. Son pagos únicos, sin suscripción ni renovaciones. El pago se hace en la página de Stripe y la venta se realiza a través de Link (Stripe), que actúa como vendedor, gestiona el IVA y te envía el recibo por email.',
       },
       {
         title: 'Entrega y recuperación',
-        text: 'La compra se activa al momento en el dispositivo donde pagas. Con tu email y el código de recuperación del recibo puedes activarla en otros dispositivos.',
+        text: 'La compra se activa al momento en el dispositivo donde pagas. Al terminar el pago te mostramos un código de recuperación: con él y tu email puedes activarla en otros dispositivos.',
       },
       {
         title: 'Derecho de desistimiento',
