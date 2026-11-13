@@ -121,3 +121,44 @@ export function deviceFingerprint(): Promise<string> {
   })();
   return cached;
 }
+
+/** Operating system family from the user agent, without versions (they change per browser). */
+function osFamily(userAgent: string): string {
+  if (/iPhone|iPad|iPod/i.test(userAgent)) return 'ios';
+  if (/Android/i.test(userAgent)) return 'android';
+  if (/Mac OS X|Macintosh/i.test(userAgent)) {
+    // iPadOS reports itself as a Mac, but has a touch screen.
+    return navigator.maxTouchPoints > 1 ? 'ios' : 'mac';
+  }
+  if (/Windows/i.test(userAgent)) return 'windows';
+  if (/CrOS/i.test(userAgent)) return 'chromeos';
+  if (/Linux/i.test(userAgent)) return 'linux';
+  return 'other';
+}
+
+let cachedCross: Promise<string> | null = null;
+
+/**
+ * SHA-256 of traits every browser on the same device reports alike, and that privacy browsers
+ * such as Brave do not randomise: physical screen size (CSS size × pixel ratio, so page zoom
+ * does not change it), colour depth, time zone, OS family and touch support. Combined on the
+ * server with the network, it lets another browser of the same phone share the counter.
+ */
+export function crossDeviceFingerprint(): Promise<string> {
+  cachedCross ??= (async () => {
+    const ratio = window.devicePixelRatio || 1;
+    const w = Math.round(screen.width * ratio);
+    const h = Math.round(screen.height * ratio);
+    const traits = [
+      osFamily(navigator.userAgent),
+      // Orientation-independent: phones swap width and height when rotated.
+      `${Math.max(w, h)}x${Math.min(w, h)}`,
+      String(screen.colorDepth),
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+      navigator.maxTouchPoints > 0 ? 'touch' : 'no-touch',
+    ].join('\n');
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(traits));
+    return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+  })();
+  return cachedCross;
+}

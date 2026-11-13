@@ -3,9 +3,9 @@
  * (the owner's choice): the sale itself is made by Link (Stripe) as merchant of record.
  */
 export const LEGAL = {
-  owner: '[Nombre y apellidos del titular]',
-  location: '[Ciudad], España',
-  email: '[email de contacto]',
+  owner: 'DroneScope',
+  location: 'Vigo, España',
+  email: 'dronescopecompare@gmail.com',
   updated: '13 de noviembre de 2026',
 } as const;
 

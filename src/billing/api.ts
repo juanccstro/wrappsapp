@@ -1,4 +1,4 @@
-import { deviceFingerprint, readDeviceId, saveDeviceId } from './device';
+import { crossDeviceFingerprint, deviceFingerprint, readDeviceId, saveDeviceId } from './device';
 
 /** Mirrors server/billing.ts (the client never imports server code). */
 export type UsageStatus = {
@@ -26,14 +26,18 @@ export class BillingError extends Error {
  * none carries anything from the chat except, for `use`, a one-way hash of it.
  */
 async function call<T>(path: string, body: Record<string, unknown> = {}): Promise<T> {
-  const [deviceId, fingerprint] = await Promise.all([readDeviceId(), deviceFingerprint()]);
+  const [deviceId, fingerprint, crossFingerprint] = await Promise.all([
+    readDeviceId(),
+    deviceFingerprint(),
+    crossDeviceFingerprint(),
+  ]);
   let response: Response;
   try {
     response = await fetch(`/api/${path}`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...body, deviceId, fingerprint }),
+      body: JSON.stringify({ ...body, deviceId, fingerprint, crossFingerprint }),
     });
   } catch {
     throw new BillingError('offline');

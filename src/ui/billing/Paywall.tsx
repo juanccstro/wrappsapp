@@ -51,18 +51,18 @@ export function Paywall(props: Props) {
       {view && (
         <motion.div
           key="paywall"
-          className="absolute inset-0 z-50 flex items-end justify-center"
+          className="absolute inset-0 z-50 flex items-center justify-center px-4 py-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
         >
           <button
             type="button"
             aria-label={t.close}
             tabIndex={-1}
             onClick={props.onClose}
-            className="absolute inset-0 cursor-default bg-[#07020f]/70 backdrop-blur-sm"
+            className="absolute inset-0 cursor-default bg-[#07020f]/75 backdrop-blur-md"
           />
           <motion.div
             ref={sheet}
@@ -70,11 +70,13 @@ export function Paywall(props: Props) {
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className="relative max-h-[92%] w-full overflow-y-auto rounded-t-[2rem] border-t border-white/15 bg-[var(--wr-bg)] px-5 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-30px_80px_rgba(0,0,0,0.55)] outline-none"
-            initial={reduced ? { opacity: 0 } : { y: '100%' }}
-            animate={reduced ? { opacity: 1 } : { y: 0 }}
-            exit={reduced ? { opacity: 0 } : { y: '100%' }}
-            transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+            // A window that appears in place (fade and a slight zoom), never sliding over
+            // the screen behind it.
+            className="relative max-h-full w-full max-w-md overflow-y-auto overscroll-contain rounded-[2rem] border border-white/15 bg-[var(--wr-bg)] px-5 pt-5 pb-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)] outline-none"
+            initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.94, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: 6 }}
+            transition={{ duration: reduced ? 0.15 : 0.28, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Soft glow of the palette behind the top of the sheet */}
             <div
@@ -86,10 +88,6 @@ export function Paywall(props: Props) {
               }}
             />
             <div className="relative">
-              <div
-                className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-white/25"
-                aria-hidden="true"
-              />
               <button
                 type="button"
                 onClick={props.onClose}
@@ -102,10 +100,10 @@ export function Paywall(props: Props) {
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={view}
-                  initial={{ opacity: 0, x: reduced ? 0 : 24 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: reduced ? 0 : -24 }}
-                  transition={{ duration: 0.18 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.16 }}
                 >
                   {(view === 'limit' || view === 'more') && (
                     <Plans

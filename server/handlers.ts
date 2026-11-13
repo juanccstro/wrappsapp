@@ -78,9 +78,11 @@ const notEnforced = (deviceId = ''): Status => ({
 /** Shared start of every device-bound call: who is this, plus the cookie to send back. */
 async function identify(billing: Billing, request: Request, body: Record<string, unknown>) {
   const fingerprint = isHash(body.fingerprint) ? body.fingerprint : undefined;
+  const crossFingerprint = isHash(body.crossFingerprint) ? body.crossFingerprint : undefined;
   const { id, device } = await billing.resolveDevice({
     deviceId: readCookie(request) ?? body.deviceId,
     fingerprint,
+    crossFingerprint,
     network: networkPrefix(clientIp(request)),
   });
   return { id, device, cookie: { 'Set-Cookie': deviceCookie(id, request) } };

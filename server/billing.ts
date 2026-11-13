@@ -71,6 +71,17 @@ function revoke(buyer: BuyerRecord, product: ProductId) {
   }
 }
 
+/** Two browsers of the same device become one: chats used in either count once. */
+function mergeDevices(into: DeviceRecord, from: DeviceRecord): DeviceRecord {
+  const used = [...into.used];
+  for (const chat of from.used) if (!used.includes(chat)) used.push(chat);
+  return {
+    used,
+    buyer: into.buyer ?? from.buyer,
+    created: Math.min(into.created, from.created),
+  };
+}
+
 export function createBilling(store: Store, secret: string) {
   const hash = (purpose: string, value: string) => keyedHash(secret, purpose, value);
 
@@ -94,36 +105,68 @@ export function createBilling(store: Store, secret: string) {
   };
 
   /**
-   * Which device is this? In order: the id the browser kept (cookie, storage), then the same
-   * device fingerprint on the same network (the browser data was cleared), then a new one.
+   * Which device is this? In order:
+   * 1. the id the browser kept (cookie, storage), following merges;
+   * 2. the same browser fingerprint on the same network (browser data was cleared);
+   * 3. the same device fingerprint on the same network: traits every browser on the device
+   *    shares (screen, time zone, OS), so another browser on the same phone is recognised;
+   * 4. a new device.
+   * When a known id turns out to be another browser of a device seen before, both are merged
+   * into the older one, so all browsers of the device share one counter.
    */
   async function resolveDevice(input: {
     deviceId?: unknown;
     fingerprint?: string;
+    crossFingerprint?: string;
     network: string;
   }): Promise<{ id: string; device: DeviceRecord }> {
     const fpKey = input.fingerprint
       ? `fp:${hash('fingerprint', `${input.fingerprint}|${input.network}`)}`
       : null;
+    const xfpKey = input.crossFingerprint
+      ? `xfp:${hash('cross-fingerprint', `${input.crossFingerprint}|${input.network}`)}`
+      : null;
+    const remember = async (id: string) => {
+      if (fpKey) await store.setIfAbsent(fpKey, id, FINGERPRINT_TTL_S);
+      if (xfpKey) await store.setIfAbsent(xfpKey, id, FINGERPRINT_TTL_S);
+    };
+    const follow = async (id: string) => (await store.get<string>(`alias:${id}`)) ?? id;
+
+    const crossId = xfpKey ? await store.get<string>(xfpKey) : null;
+    const crossDevice = crossId ? await loadDevice(crossId) : null;
 
     if (isDeviceId(input.deviceId)) {
-      const device = await loadDevice(input.deviceId);
+      const id = await follow(input.deviceId);
+      const device = await loadDevice(id);
       if (device) {
-        if (fpKey) await store.setIfAbsent(fpKey, input.deviceId, FINGERPRINT_TTL_S);
-        return { id: input.deviceId, device };
+        if (crossId && crossDevice && crossId !== id) {
+          const merged = mergeDevices(crossDevice, device);
+          await store.set(deviceKey(crossId), merged);
+          await store.set(`alias:${id}`, crossId);
+          if (fpKey) await store.set(fpKey, crossId, FINGERPRINT_TTL_S);
+          return { id: crossId, device: merged };
+        }
+        await remember(id);
+        return { id, device };
       }
     }
     if (fpKey) {
       const known = await store.get<string>(fpKey);
-      if (known) {
-        const device = await loadDevice(known);
-        if (device) return { id: known, device };
+      const id = known ? await follow(known) : null;
+      const device = id ? await loadDevice(id) : null;
+      if (id && device) {
+        await remember(id);
+        return { id, device };
       }
+    }
+    if (crossId && crossDevice) {
+      await remember(crossId);
+      return { id: crossId, device: crossDevice };
     }
     const id = isDeviceId(input.deviceId) ? input.deviceId : newDeviceId();
     const device: DeviceRecord = { used: [], created: Date.now() };
     await store.set(deviceKey(id), device);
-    if (fpKey) await store.set(fpKey, id, FINGERPRINT_TTL_S);
+    await remember(id);
     return { id, device };
   }
 
