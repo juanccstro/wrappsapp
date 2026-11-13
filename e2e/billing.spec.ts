@@ -17,6 +17,9 @@ test('two different chats are free, then the paywall opens', async ({ page }) =>
   for (let n = 1; n <= 3; n++) {
     await page.getByRole('button', { name: 'Haz tu Wrapped' }).click();
     const dialog = page.getByRole('dialog');
+    // Either the upload screen or (uses exhausted) the paywall: wait for whichever appears.
+    const upload = page.getByRole('heading', { name: 'Sube tu chat' });
+    await expect(upload.or(dialog)).toBeVisible();
     if (await dialog.isVisible()) break;
     await page.locator('input[type=file]').setInputFiles({
       name: `chat-${Date.now()}-${n}.txt`,
