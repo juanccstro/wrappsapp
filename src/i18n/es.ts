@@ -202,7 +202,7 @@ export const es = {
     secure: 'Pago seguro con Stripe',
     secureDetail:
       'Pagas en la página de Stripe, la plataforma de pagos que usan millones de tiendas. Wrappsapp nunca ve tu tarjeta ni tus datos bancarios.',
-    methods: 'Tarjeta · Apple Pay · Google Pay · PayPal',
+    methods: 'Tarjeta · Apple Pay · Google Pay · Link',
     restoreLink: '¿Ya pagaste? Recupera tu compra',
     termsLink: 'Condiciones',
     close: 'Cerrar',

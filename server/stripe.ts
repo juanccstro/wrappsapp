@@ -11,10 +11,35 @@ export function getStripe(): Stripe | null {
   return client;
 }
 
+const priceIds = new Map<ProductId, string>();
+
+/**
+ * The price created in the Stripe dashboard for a product, found by its lookup key
+ * (wrappsapp_pack3, wrappsapp_unlimited), so payments and reports show the real catalogue
+ * products. Null if it does not exist in this account (e.g. a test account without them):
+ * then the checkout describes the product inline instead.
+ */
+async function catalogPrice(stripe: Stripe, product: ProductId): Promise<string | null> {
+  const cached = priceIds.get(product);
+  if (cached) return cached;
+  const prices = await stripe.prices.list({
+    lookup_keys: [PRODUCTS[product].lookupKey],
+    active: true,
+    limit: 1,
+  });
+  const price = prices.data[0];
+  // Only use it if it still matches what the app shows and charges.
+  if (!price || price.unit_amount !== PRODUCTS[product].amount || price.currency !== 'eur') {
+    return null;
+  }
+  priceIds.set(product, price.id);
+  return price.id;
+}
+
 /**
  * A Stripe-hosted payment page. Wrappsapp never sees card or bank details: the customer pays
  * on checkout.stripe.com, with whatever methods are enabled in the Stripe dashboard (cards,
- * Apple Pay, Google Pay, PayPal…). The recovery code goes into the receipt Stripe emails.
+ * Apple Pay, Google Pay, Link…). The recovery code goes into the receipt Stripe emails.
  */
 export async function createCheckout(input: {
   stripe: Stripe;
@@ -24,18 +49,22 @@ export async function createCheckout(input: {
   origin: string;
 }): Promise<{ id: string; url: string }> {
   const product = PRODUCTS[input.product];
+  const price = await catalogPrice(input.stripe, input.product);
   const session = await input.stripe.checkout.sessions.create({
     mode: 'payment',
     locale: 'es',
     line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: 'eur',
-          unit_amount: product.amount,
-          product_data: { name: product.name, description: product.description },
-        },
-      },
+      price
+        ? { quantity: 1, price }
+        : {
+            quantity: 1,
+            price_data: {
+              currency: 'eur',
+              unit_amount: product.amount,
+              tax_behavior: 'inclusive',
+              product_data: { name: product.name, description: product.description },
+            },
+          },
     ],
     client_reference_id: input.deviceId,
     metadata: { deviceId: input.deviceId, product: input.product },

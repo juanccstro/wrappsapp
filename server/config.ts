@@ -7,12 +7,15 @@ export const PRODUCTS = {
     description: '3 Wrapped más en este dispositivo y en los que recuperes tu compra.',
     amount: 199,
     credits: 3,
+    /** Lookup key of the price created in the Stripe dashboard. */
+    lookupKey: 'wrappsapp_pack3',
   },
   unlimited: {
     name: 'Wrappsapp · Acceso ilimitado',
     description: 'Wrapped ilimitados para siempre.',
     amount: 499,
     credits: 0,
+    lookupKey: 'wrappsapp_unlimited',
   },
 } as const;
 
