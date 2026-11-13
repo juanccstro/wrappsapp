@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import type { Product, UsageStatus } from '../../billing/api';
+import type { Product, RestoreOutcome, UsageStatus } from '../../billing/api';
 import type { PurchaseResult } from '../../billing/useBilling';
 import { es } from '../../i18n/es';
 import { Button } from '../components/Shell';
@@ -16,7 +16,7 @@ type Props = {
   errorCode?: string;
   onClose: () => void;
   onCheckout: (product: Product) => Promise<string | null>;
-  onRestore: (email: string, code: string) => Promise<string | null>;
+  onRestore: (email: string, code: string) => Promise<{ outcome?: RestoreOutcome; error?: string }>;
   onTerms: () => void;
 };
 
@@ -319,8 +319,15 @@ function Restore({ titleId, onRestore, onBack }: Props & { titleId: string; onBa
     if (busy) return;
     setBusy(true);
     setMessage(null);
-    const failure = await onRestore(email, code);
-    setMessage(failure ? { ok: false, text: errorText(failure) } : { ok: true, text: t.restored });
+    const result = await onRestore(email, code);
+    if (result.error) setMessage({ ok: false, text: errorText(result.error) });
+    else {
+      const outcome = result.outcome ?? 'restored';
+      setMessage({
+        ok: outcome === 'restored' || outcome === 'already_active',
+        text: t.restoreOutcome[outcome],
+      });
+    }
     setBusy(false);
   };
 

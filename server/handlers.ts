@@ -1,8 +1,16 @@
+import type Stripe from 'stripe';
 import { createBilling, type Billing, type Status } from './billing.js';
 import { env, isProductId, PENDING_TTL_S, type ProductId } from './config.js';
 import { isEmail, isHash, networkPrefix, newRecoveryCode } from './ids.js';
 import { getStore } from './store.js';
-import { createCheckout, getStripe, paidCheckout } from './stripe.js';
+import {
+  createCheckout,
+  getStripe,
+  paidCheckout,
+  refundStateOf,
+  refundTarget,
+  type RefundState,
+} from './stripe.js';
 
 /**
  * The API of the paid plan. Each handler takes a standard Request and returns a Response, so
@@ -179,9 +187,9 @@ export async function restoreHandler(request: Request): Promise<Response> {
     return json({ error: 'too_many_requests' }, 429);
   }
   const { id, device, cookie } = await identify(billing, request, body);
-  const status = await billing.restore(id, device, body.email, body.code);
-  if (!status) return json({ error: 'not_found' }, 404, cookie);
-  return json({ status }, 200, cookie);
+  const result = await billing.restore(id, device, body.email, body.code);
+  if (!result) return json({ error: 'not_found' }, 404, cookie);
+  return json(result, 200, cookie);
 }
 
 /** POST /api/stripe-webhook — Stripe tells us a payment went through. Signature checked. */
@@ -214,6 +222,34 @@ export async function webhookHandler(request: Request): Promise<Response> {
         email: paid.email,
         product: paid.product,
         recoveryCode: pending.code,
+      });
+    }
+  }
+
+  // Refunds made from the Stripe dashboard take the purchase away (and give it back if the
+  // refund fails). Partial refunds leave it as it is.
+  let refundObject: Stripe.Refund | Stripe.Charge | null = null;
+  let state: RefundState | null = null;
+  if (
+    event.type === 'refund.created' ||
+    event.type === 'refund.updated' ||
+    event.type === 'refund.failed' ||
+    event.type === 'charge.refund.updated'
+  ) {
+    refundObject = event.data.object;
+    state = refundStateOf(event.data.object.status);
+  } else if (event.type === 'charge.refunded' && event.data.object.refunded) {
+    refundObject = event.data.object;
+    state = 'refunded';
+  }
+  if (refundObject && state) {
+    const target = await refundTarget(stripe, refundObject);
+    if (target && (target.full || state === 'active')) {
+      await billing.setRefundState({
+        checkoutId: target.checkoutId,
+        email: target.email,
+        product: target.product,
+        state,
       });
     }
   }

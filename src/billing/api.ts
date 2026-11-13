@@ -60,5 +60,8 @@ export const confirmCheckout = (sessionId: string) =>
     { sessionId },
   );
 
+/** What happened when restoring (mirrors RestoreOutcome in server/billing.ts). */
+export type RestoreOutcome = 'restored' | 'already_active' | 'refund_pending' | 'refunded';
+
 export const restorePurchase = (email: string, code: string) =>
-  call<{ status: UsageStatus }>('restore', { email, code });
+  call<{ status: UsageStatus; outcome: RestoreOutcome }>('restore', { email, code });

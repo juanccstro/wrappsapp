@@ -142,7 +142,7 @@ describe('purchases', () => {
       ' ANA@example.com ',
       'abcd efgh jklm',
     );
-    expect(restored).toMatchObject({ unlimited: true });
+    expect(restored).toMatchObject({ outcome: 'restored', status: { unlimited: true } });
   });
 
   it('stores no email, chat or code in clear', async () => {
@@ -156,6 +156,92 @@ describe('purchases', () => {
     expect(dump).not.toContain('example.com');
     expect(dump).not.toContain(chat(1));
     expect(dump).not.toContain('ABCD');
+  });
+});
+
+describe('refunds and restore feedback', () => {
+  const buyPack = (billing: ReturnType<typeof setup>['billing'], deviceId: string) =>
+    billing.applyPurchase({
+      checkoutId: 'cs_live_pack',
+      deviceId,
+      email: 'ana@example.com',
+      product: 'pack3',
+      recoveryCode: 'ABCD-EFGH-JKLM',
+    });
+  const refund = (
+    billing: ReturnType<typeof setup>['billing'],
+    state: 'active' | 'refund_pending' | 'refunded',
+    checkoutId = 'cs_live_pack',
+  ) => billing.setRefundState({ checkoutId, email: 'ana@example.com', product: 'pack3', state });
+
+  it('a refund in progress or done takes the pack away; a failed one gives it back', async () => {
+    const { billing, device } = setup();
+    const { id } = await device();
+    await buyPack(billing, id);
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(5);
+
+    await refund(billing, 'refund_pending');
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(2);
+    await refund(billing, 'refunded');
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(2);
+    await refund(billing, 'active');
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(5);
+  });
+
+  it('tells whether the purchase was restored, already active, or refunded', async () => {
+    const { billing, device } = setup();
+    const phone = await device(undefined, '83.45.12', sha('phone'));
+    await buyPack(billing, phone.id);
+
+    const again = await device(phone.id);
+    expect(
+      (await billing.restore(phone.id, again.device, 'ana@example.com', 'ABCD-EFGH-JKLM'))?.outcome,
+    ).toBe('already_active');
+
+    const laptop = await device(undefined, '10.0.0', sha('laptop'));
+    expect(
+      (await billing.restore(laptop.id, laptop.device, 'ana@example.com', 'ABCD-EFGH-JKLM'))
+        ?.outcome,
+    ).toBe('restored');
+
+    await refund(billing, 'refund_pending');
+    const tablet = await device(undefined, '10.0.1', sha('tablet'));
+    const pending = await billing.restore(
+      tablet.id,
+      tablet.device,
+      'ana@example.com',
+      'ABCDEFGHJKLM',
+    );
+    expect(pending?.outcome).toBe('refund_pending');
+    expect(pending?.status.limit).toBe(2);
+
+    await refund(billing, 'refunded');
+    expect(
+      (await billing.restore(tablet.id, tablet.device, 'ana@example.com', 'ABCD-EFGH-JKLM'))
+        ?.outcome,
+    ).toBe('refunded');
+  });
+
+  it('handles a refund of a purchase made before states were kept', async () => {
+    const { billing, device, store } = setup();
+    const { id } = await device();
+    await buyPack(billing, id);
+    // Strip the purchase list to look like a record from the previous version.
+    const dev = await store.get<{ buyer: string }>('dev:' + id);
+    const key = 'buyer:' + dev?.buyer;
+    const buyer = await store.get<Record<string, unknown>>(key);
+    // The previous version kept recovery codes in a plain list.
+    if (buyer) buyer.codes = (buyer.purchases as { code: string }[]).map((p) => p.code);
+    delete buyer?.purchases;
+    await store.set(key, buyer);
+
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(5);
+    await refund(billing, 'refunded', 'cs_live_old');
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(2);
+    const other = await device(undefined, '10.0.2', sha('other'));
+    expect(
+      (await billing.restore(other.id, other.device, 'ana@example.com', 'ABCD-EFGH-JKLM'))?.outcome,
+    ).toBe('refunded');
   });
 });
 

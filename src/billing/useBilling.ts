@@ -7,6 +7,7 @@ import {
   startCheckout,
   spendUse,
   type Product,
+  type RestoreOutcome,
   type UsageStatus,
 } from './api';
 
@@ -88,14 +89,19 @@ export function useBilling() {
     }
   }, []);
 
-  const restore = useCallback(async (email: string, code: string): Promise<string | null> => {
-    try {
-      setStatus((await restorePurchase(email, code)).status);
-      return null;
-    } catch (err) {
-      return errorCode(err);
-    }
-  }, []);
+  /** Restores a purchase. Returns what happened, or an error code. */
+  const restore = useCallback(
+    async (email: string, code: string): Promise<{ outcome?: RestoreOutcome; error?: string }> => {
+      try {
+        const result = await restorePurchase(email, code);
+        setStatus(result.status);
+        return { outcome: result.outcome };
+      } catch (err) {
+        return { error: errorCode(err) };
+      }
+    },
+    [],
+  );
 
   const exhausted = Boolean(
     status?.enforced && !status.unlimited && status.remaining !== null && status.remaining <= 0,

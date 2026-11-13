@@ -215,6 +215,14 @@ export const es = {
     codePlaceholder: 'XXXX-XXXX-XXXX',
     restore: 'Recuperar',
     restored: 'Compra recuperada en este dispositivo.',
+    restoreOutcome: {
+      restored: 'Compra recuperada en este dispositivo.',
+      already_active:
+        'Esta compra ya estaba activa en este dispositivo. No tienes que hacer nada más.',
+      refund_pending:
+        'Esta compra está en proceso de reembolso, así que ya no está activa. Si es un error, escríbenos al contacto de Condiciones.',
+      refunded: 'Esta compra se reembolsó, así que ya no está activa.',
+    },
     successTitle: {
       pack3: 'Tienes 3 Wrapped más',
       unlimited: 'Wrapped ilimitados',

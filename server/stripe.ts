@@ -100,3 +100,45 @@ export function paidCheckout(session: Stripe.Checkout.Session): PaidCheckout | n
   if (!deviceId || (product !== 'pack3' && product !== 'unlimited') || !email) return null;
   return { id: session.id, deviceId, product, email };
 }
+
+export type RefundState = 'active' | 'refund_pending' | 'refunded';
+
+/** What a Stripe refund status means for the purchase. */
+export function refundStateOf(status: string | null | undefined): RefundState | null {
+  switch (status) {
+    case 'pending':
+    case 'requires_action':
+      return 'refund_pending';
+    case 'succeeded':
+      return 'refunded';
+    case 'failed':
+    case 'canceled':
+      return 'active';
+    default:
+      return null;
+  }
+}
+
+const idOf = (value: string | { id: string } | null | undefined) =>
+  typeof value === 'string' ? value : (value?.id ?? null);
+
+/**
+ * The Wrappsapp purchase behind a refund event, found through its payment: which checkout,
+ * product and buyer email, and whether the refund covers the whole amount (partial refunds
+ * leave the purchase active).
+ */
+export async function refundTarget(
+  stripe: Stripe,
+  object: Stripe.Refund | Stripe.Charge,
+): Promise<{ checkoutId: string; email: string; product: ProductId; full: boolean } | null> {
+  const paymentIntent = idOf(object.payment_intent);
+  if (!paymentIntent) return null;
+  const sessions = await stripe.checkout.sessions.list({ payment_intent: paymentIntent, limit: 1 });
+  const session = sessions.data[0];
+  const product = session?.metadata?.product;
+  const email = session?.customer_details?.email ?? session?.customer_email;
+  if (!session || (product !== 'pack3' && product !== 'unlimited') || !email) return null;
+  const total = session.amount_total ?? 0;
+  const refunded = object.object === 'charge' ? object.amount_refunded : object.amount;
+  return { checkoutId: session.id, email, product, full: refunded >= total };
+}
