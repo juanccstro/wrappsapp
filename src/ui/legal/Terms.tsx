@@ -27,7 +27,7 @@ export function Terms({ onBack }: { onBack: () => void }) {
           <li className="rounded-2xl bg-white/5 p-4">
             <h2 className="font-display text-sm font-bold">{owner.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-white/85">
-              {owner.text(LEGAL.owner, LEGAL.taxId, LEGAL.location, LEGAL.email)}
+              {owner.text(LEGAL.owner, LEGAL.location, LEGAL.email)}
             </p>
           </li>
         )}

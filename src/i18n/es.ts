@@ -249,8 +249,8 @@ export const es = {
     sections: [
       {
         title: 'Quién vende',
-        text: (owner: string, taxId: string, location: string, email: string) =>
-          `Wrappsapp es un servicio de ${owner} (${taxId}), con domicilio en ${location}. Contacto: ${email}.`,
+        text: (owner: string, location: string, email: string) =>
+          `Wrappsapp es un servicio de ${owner} (${location}). Las compras se venden a través de Link (Stripe), que actúa como vendedor. Contacto: ${email}.`,
       },
     ],
     items: [

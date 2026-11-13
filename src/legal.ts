@@ -1,10 +1,9 @@
 /**
- * Who sells. Spanish law (LSSI) requires showing it on the site; it appears in the terms
- * screen. FILL THESE IN before taking real payments.
+ * Who runs Wrappsapp, shown in the terms screen. The tax ID is deliberately not published
+ * (the owner's choice): the sale itself is made by Link (Stripe) as merchant of record.
  */
 export const LEGAL = {
   owner: '[Nombre y apellidos del titular]',
-  taxId: '[NIF]',
   location: '[Ciudad], España',
   email: '[email de contacto]',
   updated: '13 de noviembre de 2026',
