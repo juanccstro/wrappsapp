@@ -63,9 +63,35 @@ La vista previa al compartir el enlace (título, descripción e imagen) usa el d
 producción de Vercel. Con un dominio propio, define la variable de entorno `SITE_URL` en el
 proyecto. La imagen se regenera con `npm run og`.
 
+## Pagos (plan gratuito y de pago)
+
+Cada dispositivo crea 2 Wrapped de chats distintos gratis; después se ofrece un pack de 3
+(1,99 €) o el acceso ilimitado (4,99 €), con Stripe Checkout. Mientras no se configuren las
+variables de abajo, la web funciona sin límite y no muestra nada de esto.
+
+- `server/` y `api/`: funciones de Vercel que cuentan los usos y comprueban los pagos. Solo
+  guardan huellas cifradas (dispositivo, chat, email), nunca el contenido de un chat.
+- La tarjeta se introduce en la página de Stripe, nunca en Wrappsapp.
+- Tras pagar se muestra un código de recuperación, que también llega en el recibo de Stripe.
+  Con email + código se recupera la compra en otro dispositivo.
+
+Puesta en marcha (ver `.env.example`):
+
+1. **Base de datos**: Vercel → Storage → Upstash Redis → conectar al proyecto.
+2. **Secreto**: variable `WRAPPSAPP_SECRET` con un texto largo y aleatorio.
+3. **Stripe**: variable `STRIPE_SECRET_KEY` (empieza por `sk_test_` para pruebas).
+4. **Webhook**: en Stripe, un endpoint a `https://<tu-dominio>/api/stripe-webhook` con los
+   eventos `checkout.session.completed` y `checkout.session.async_payment_succeeded`; su
+   secreto va en `STRIPE_WEBHOOK_SECRET`.
+5. **Recibos**: Stripe → Settings → Customer emails → activar recibos de pagos.
+6. **Datos legales**: rellenar `src/legal.ts` (el enlace a Condiciones aparece entonces).
+
+En local, `npm run dev` ya incluye la API con una base de datos en memoria.
+
 ## Privacidad
 
-- Ningún mensaje se envía a ningún sitio: no hay backend, analítica de contenido ni cookies.
+- Ningún mensaje se envía a ningún sitio: el chat se analiza en el navegador. El servidor
+  solo cuenta usos y compras, con datos cifrados, y no hay analítica ni publicidad.
 - Los chats de prueba del repositorio son sintéticos. Los chats reales no deben subirse:
   `tests/fixtures/private/` y los nombres habituales de exportación están en `.gitignore`.
 - Úsalo con chats en los que todo el mundo esté de acuerdo en verlo.

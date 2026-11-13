@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { defineConfig, type Plugin } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { devApi } from './server/devApi';
 
 /**
  * `npm run preview` serves the build with the same security headers as production
@@ -33,7 +34,7 @@ const linkPreview = (): Plugin => ({
 });
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), linkPreview()],
+  plugins: [react(), tailwindcss(), linkPreview(), devApi()],
   // The Worker loads JSZip on demand, which needs an ES module worker.
   worker: { format: 'es' },
   preview: { headers: securityHeaders },

@@ -24,6 +24,11 @@ export type ChatSummary = {
   meta: ParsedChat['meta'];
   periods: PeriodOption[];
   defaultPeriod: PeriodKind;
+  /**
+   * SHA-256 of the whole chat in canonical form (no names, no period). Identifies "this chat"
+   * for the free-use limit without revealing anything about its content.
+   */
+  chatKey: string;
 };
 
 export type AnalysisResult = {
@@ -48,11 +53,12 @@ export function createSession() {
   let chat: ParsedChat | null = null;
   let chatName: string | null = null;
 
-  const summarize = (parsed: ParsedChat): ChatSummary => ({
+  const summarize = async (parsed: ParsedChat): Promise<ChatSummary> => ({
     participants: parsed.participants,
     meta: parsed.meta,
     periods: listPeriods(parsed),
     defaultPeriod: defaultPeriodKind(parsed),
+    chatKey: await computeSeed(parsed, 'billing:chat'),
   });
 
   return {

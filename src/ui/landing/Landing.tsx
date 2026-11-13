@@ -1,12 +1,18 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import logo from '../../assets/logo.png';
 import { es } from '../../i18n/es';
+import { legalIncomplete } from '../../legal';
 import { Button } from '../components/Shell';
 import { LockIcon } from '../components/icons';
 
-type Props = { onStart: () => void; onDemo: () => void; onPrivacy: () => void };
+type Props = {
+  onStart: () => void;
+  onDemo: () => void;
+  onPrivacy: () => void;
+  onTerms: () => void;
+};
 
-export function Landing({ onStart, onDemo, onPrivacy }: Props) {
+export function Landing({ onStart, onDemo, onPrivacy, onTerms }: Props) {
   const reduced = useReducedMotion();
   const rise = (delay: number) =>
     reduced
@@ -72,13 +78,25 @@ export function Landing({ onStart, onDemo, onPrivacy }: Props) {
 
       {/* Solid backdrop: the decorative blobs behind would lower the contrast of small text. */}
       <footer className="relative -mx-6 mt-6 -mb-6 flex flex-col items-center gap-1 bg-[var(--wr-bg)]/85 px-6 pt-3 pb-5 text-center text-xs text-white/80">
-        <button
-          type="button"
-          onClick={onPrivacy}
-          className="min-h-8 cursor-pointer font-semibold text-white underline underline-offset-4"
-        >
-          {es.landing.privacy}
-        </button>
+        <nav className="flex items-center gap-5">
+          <button
+            type="button"
+            onClick={onPrivacy}
+            className="min-h-8 cursor-pointer font-semibold text-white underline underline-offset-4"
+          >
+            {es.landing.privacy}
+          </button>
+          {/* Hidden until the seller details in src/legal.ts are filled in. */}
+          {!legalIncomplete && (
+            <button
+              type="button"
+              onClick={onTerms}
+              className="min-h-8 cursor-pointer font-semibold text-white underline underline-offset-4"
+            >
+              {es.landing.terms}
+            </button>
+          )}
+        </nav>
         {es.app.disclaimer}
       </footer>
     </main>

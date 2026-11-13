@@ -8,6 +8,7 @@ test-results/
 # Entorno y secretos
 .env
 .env.*
+!.env.example
 *.local
 .vercel
 

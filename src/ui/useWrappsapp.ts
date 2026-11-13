@@ -7,6 +7,7 @@ import type { ChatSummary } from '../worker/session';
 export type Screen =
   | { name: 'landing' }
   | { name: 'privacy' }
+  | { name: 'terms' }
   | { name: 'upload'; error: SessionErrorCode | null }
   | { name: 'loading' }
   | { name: 'period'; summary: ChatSummary }
@@ -82,6 +83,7 @@ export function useWrappsapp() {
 
   const goUpload = useCallback(() => setScreen({ name: 'upload', error: null }), []);
   const goPrivacy = useCallback(() => setScreen({ name: 'privacy' }), []);
+  const goTerms = useCallback(() => setScreen({ name: 'terms' }), []);
 
   /** From the last slide to the full report, and back to where the story ended. */
   const openReport = useCallback(() => {
@@ -100,6 +102,7 @@ export function useWrappsapp() {
     screen,
     goUpload,
     goPrivacy,
+    goTerms,
     loadFile,
     loadDemo,
     start,

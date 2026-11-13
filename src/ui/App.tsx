@@ -1,6 +1,10 @@
-import { lazy, Suspense, useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { createAudioPlayer, readMutePreference, saveMutePreference } from '../audio/player';
+import { useBilling } from '../billing/useBilling';
+import { Paywall, type PaywallView } from './billing/Paywall';
+import { UsageBadge } from './billing/UsageBadge';
 import { PhoneFrame } from './components/Shell';
+import { Terms } from './legal/Terms';
 import { Landing } from './landing/Landing';
 import { Loading } from './loading/Loading';
 import { PeriodSelect } from './period/PeriodSelect';
@@ -15,8 +19,32 @@ const StoryPlayer = lazy(() => loadStory().then((m) => ({ default: m.StoryPlayer
 const Report = lazy(() => import('./report/Report').then((m) => ({ default: m.Report })));
 
 export function App() {
-  const { screen, goUpload, goPrivacy, loadFile, loadDemo, start, openReport, backToStory, reset } =
-    useWrappsapp();
+  const {
+    screen,
+    goUpload,
+    goPrivacy,
+    goTerms,
+    loadFile,
+    loadDemo,
+    start,
+    openReport,
+    backToStory,
+    reset,
+  } = useWrappsapp();
+  const billing = useBilling();
+  const [paywall, setPaywall] = useState<PaywallView | null>(null);
+  const [paywallError, setPaywallError] = useState<string>();
+
+  // Back from the Stripe page: show how it went.
+  const { returned, clearReturned } = billing;
+  useEffect(() => {
+    if (!returned) return;
+    setPaywall(returned);
+    clearReturned();
+  }, [returned, clearReturned]);
+
+  const showBadge =
+    screen.name === 'landing' || screen.name === 'upload' || screen.name === 'period';
   const [audio] = useState(createAudioPlayer);
   const [muted, setMuted] = useState(readMutePreference);
 
@@ -31,8 +59,9 @@ export function App() {
     <PhoneFrame>
       {screen.name === 'landing' && (
         <Landing
-          onStart={goUpload}
+          onStart={() => (billing.exhausted ? setPaywall('limit') : goUpload())}
           onPrivacy={goPrivacy}
+          onTerms={goTerms}
           onDemo={() => {
             // Sound may only start from a tap: unlock it here, play it when the story opens.
             audio.unlock();
@@ -42,6 +71,7 @@ export function App() {
         />
       )}
       {screen.name === 'privacy' && <Privacy onBack={reset} />}
+      {screen.name === 'terms' && <Terms onBack={reset} />}
       {screen.name === 'upload' && (
         <Upload
           error={screen.error}
@@ -57,8 +87,17 @@ export function App() {
         <PeriodSelect
           summary={screen.summary}
           onStart={(period) => {
+            // Sound may only start from a tap: unlock it now, before waiting for the server.
             audio.unlock();
-            void start(period);
+            const { chatKey } = screen.summary;
+            void billing.consume(chatKey).then((result) => {
+              if (result === 'ok') void start(period);
+              else if (result === 'blocked') setPaywall('limit');
+              else {
+                setPaywallError('check');
+                setPaywall('error');
+              }
+            });
           }}
           onDiscard={reset}
         />
@@ -88,6 +127,20 @@ export function App() {
           />
         </Suspense>
       )}
+      {showBadge && <UsageBadge status={billing.status} onOpen={() => setPaywall('more')} />}
+      <Paywall
+        view={paywall}
+        status={billing.status}
+        purchase={billing.purchase}
+        errorCode={paywallError}
+        onClose={() => setPaywall(null)}
+        onCheckout={billing.checkout}
+        onRestore={billing.restore}
+        onTerms={() => {
+          setPaywall(null);
+          goTerms();
+        }}
+      />
     </PhoneFrame>
   );
 }

@@ -17,25 +17,34 @@ export const es = {
     start: 'Haz tu Wrapped',
     demo: 'Ver demo',
     privacy: 'Privacidad',
-    privacyDetail: 'Todo se calcula en tu navegador. No hay servidor ni subida de archivos.',
+    terms: 'Condiciones',
+    privacyDetail: 'Todo se calcula en tu navegador. El archivo nunca se sube a ningún servidor.',
     consent: 'Úsalo con chats en los que todo el mundo esté de acuerdo en verlo.',
   },
   privacy: {
     title: 'Privacidad',
     summary:
-      'Wrappsapp funciona entero en tu navegador. Tu chat no se sube, no se guarda y no lo ve nadie más que tú.',
+      'Tu chat se lee y se analiza en tu navegador: no se sube, no se guarda y no lo ve nadie más que tú. Para el límite de Wrapped gratis y las compras, el servidor guarda lo mínimo, y nunca el contenido.',
     points: [
       {
         title: 'Tus mensajes no salen de tu dispositivo',
-        text: 'No hay servidor. El archivo se lee y se analiza en tu navegador, y la web tiene bloqueado por configuración el envío de datos a otros sitios.',
+        text: 'El archivo se lee en tu navegador y la web tiene bloqueado por configuración el envío de datos a otros sitios. El chat vive en memoria y desaparece al pulsar «Borrar y salir» o cerrar la pestaña.',
       },
       {
-        title: 'No se guarda nada del chat',
-        text: 'El chat vive solo en memoria mientras ves el resumen. Al pulsar «Borrar y salir» o cerrar la pestaña, desaparece. Lo único que se recuerda es si tienes la música silenciada.',
+        title: 'Qué se guarda para el límite gratis',
+        text: 'Para contar tus 2 Wrapped gratis se guarda un identificador de este dispositivo (en una cookie técnica y en el almacenamiento del navegador) y, para reconocerlo si borras esos datos, una huella cifrada del dispositivo combinada con tu red. De cada chat solo se guarda una huella cifrada que sirve para no cobrarte dos veces el mismo y de la que no se puede reconstruir nada. Se usa solo para esto y se borra a los 2 años sin uso.',
       },
       {
-        title: 'Sin cookies ni seguimiento',
-        text: 'No hay cookies, cuentas ni analítica sobre lo que escribes. Las imágenes que compartes se crean en tu dispositivo y solo salen si tú las envías.',
+        title: 'Pagos',
+        text: 'Los pagos los procesa Stripe en su propia página: Wrappsapp nunca ve tu tarjeta ni tus datos bancarios. De tu compra se guarda el producto y una huella cifrada de tu email, para que puedas recuperarla en otro dispositivo con tu código. Stripe trata tus datos según su propia política de privacidad.',
+      },
+      {
+        title: 'Sin publicidad ni seguimiento',
+        text: 'No hay anuncios, analítica sobre lo que escribes ni cookies de terceros. Las imágenes que compartes se crean en tu dispositivo y solo salen si tú las envías.',
+      },
+      {
+        title: 'Tus derechos',
+        text: 'Puedes pedir el acceso o el borrado de estos datos, o hacer cualquier consulta, escribiendo al contacto que aparece en Condiciones.',
       },
       {
         title: 'Los demás también cuentan',
@@ -166,6 +175,118 @@ export const es = {
     previousCard: 'Tarjeta anterior',
     nextCard: 'Tarjeta siguiente',
     cardOf: (current: number, total: number) => `Tarjeta ${current} de ${total}`,
+  },
+  billing: {
+    badge: (used: number, limit: number) => `${used} de ${limit} usados`,
+    badgeUnlimited: 'Ilimitado',
+    badgeLabel: 'Wrapped usados en este dispositivo. Toca para ver opciones.',
+    limitTitle: 'Has agotado tus Wrapped gratis',
+    limitText: (limit: number) =>
+      `Ya has creado ${limit} Wrapped en este dispositivo. Elige cómo seguir: los chats que ya hiciste se pueden volver a ver sin gastar nada.`,
+    moreTitle: 'Más Wrapped',
+    moreText: 'Elige cómo seguir creando Wrapped de tus chats.',
+    plans: {
+      pack3: { title: 'Pack de 3', detail: '3 Wrapped más', price: '1,99 €' },
+      unlimited: {
+        title: 'Ilimitado',
+        detail: 'Para siempre, sin límites',
+        price: '4,99 €',
+        badge: 'Mejor opción',
+      },
+    },
+    oneTime: 'Pago único. IVA incluido. Sin suscripción.',
+    consent:
+      'Acepto las condiciones y pido que el acceso empiece ya. Sé que, al ser contenido digital, una vez empezado pierdo el derecho de desistimiento.',
+    pay: (price: string) => `Ir al pago seguro · ${price}`,
+    redirecting: 'Abriendo la página de pago…',
+    secure: 'Pago seguro con Stripe',
+    secureDetail:
+      'Pagas en la página de Stripe, la plataforma de pagos que usan millones de tiendas. Wrappsapp nunca ve tu tarjeta ni tus datos bancarios.',
+    methods: 'Tarjeta · Apple Pay · Google Pay · PayPal',
+    restoreLink: '¿Ya pagaste? Recupera tu compra',
+    termsLink: 'Condiciones',
+    close: 'Cerrar',
+    back: 'Volver',
+    restoreTitle: 'Recupera tu compra',
+    restoreText:
+      'Escribe el email con el que pagaste y el código de recuperación. Está en el recibo que te envió Stripe.',
+    email: 'Email',
+    code: 'Código de recuperación',
+    codePlaceholder: 'XXXX-XXXX-XXXX',
+    restore: 'Recuperar',
+    restored: 'Compra recuperada en este dispositivo.',
+    successTitle: {
+      pack3: 'Tienes 3 Wrapped más',
+      unlimited: 'Wrapped ilimitados',
+    },
+    successText:
+      'Pago completado. Vuelve a subir tu chat cuando quieras: ya está desbloqueado en este dispositivo.',
+    codeTitle: 'Tu código de recuperación',
+    codeText:
+      'Guárdalo: con él y tu email recuperas la compra en otro dispositivo. También te llega en el recibo de Stripe.',
+    copy: 'Copiar',
+    copied: 'Copiado',
+    continue: 'Seguir',
+    pendingTitle: 'Estamos confirmando tu pago',
+    pendingText:
+      'Algunos métodos de pago tardan unos minutos. En cuanto se confirme, tendrás tu compra en este dispositivo. Si no aparece, usa «Recupera tu compra» con el código del recibo.',
+    cancelTitle: 'No se ha completado el pago',
+    cancelText: 'No se te ha cobrado nada. Puedes intentarlo otra vez cuando quieras.',
+    errors: {
+      offline: 'No hay conexión. Comprueba tu internet y vuelve a intentarlo.',
+      payments_unavailable: 'Los pagos no están disponibles ahora mismo. Inténtalo más tarde.',
+      too_many_requests: 'Demasiados intentos seguidos. Espera un rato y vuelve a probar.',
+      not_found: 'No encontramos una compra con ese email y ese código. Revisa los dos.',
+      bad_request: 'Revisa el email y el código.',
+      server_error: 'Algo ha fallado. Vuelve a intentarlo en un momento.',
+      check:
+        'No hemos podido comprobar tus Wrapped disponibles. Revisa tu conexión y vuelve a pulsar «Empezar».',
+    } as Record<string, string>,
+  },
+  terms: {
+    title: 'Condiciones',
+    updated: (date: string) => `Última actualización: ${date}`,
+    sections: [
+      {
+        title: 'Quién vende',
+        text: (owner: string, taxId: string, location: string, email: string) =>
+          `Wrappsapp es un servicio de ${owner} (${taxId}), con domicilio en ${location}. Contacto: ${email}.`,
+      },
+    ],
+    items: [
+      {
+        title: 'Qué es Wrappsapp',
+        text: 'Una web que convierte la exportación de un chat en un resumen animado. El análisis se hace en tu navegador; el chat no se envía a ningún servidor.',
+      },
+      {
+        title: 'Uso gratuito',
+        text: 'Cada dispositivo puede crear 2 Wrapped de chats distintos gratis. Volver a ver un chat que ya hiciste, o cambiar su periodo, no cuenta. La demo es siempre gratis.',
+      },
+      {
+        title: 'Compras',
+        text: 'Pack de 3 Wrapped: 1,99 €. Acceso ilimitado para siempre: 4,99 €. Precios finales con IVA incluido. Son pagos únicos, sin suscripción ni renovaciones. El pago lo procesa Stripe; el recibo te llega por email.',
+      },
+      {
+        title: 'Entrega y recuperación',
+        text: 'La compra se activa al momento en el dispositivo donde pagas. Con tu email y el código de recuperación del recibo puedes activarla en otros dispositivos.',
+      },
+      {
+        title: 'Derecho de desistimiento',
+        text: 'Al ser contenido digital que se entrega al momento, antes de pagar se te pide que aceptes que el acceso empiece ya y que, una vez empezado, pierdes el derecho de desistimiento de 14 días (art. 103.m de la Ley General para la Defensa de los Consumidores y Usuarios).',
+      },
+      {
+        title: 'Si algo falla',
+        text: 'Si pagas y la compra no se activa, o la web no funciona con tu chat, escríbenos al contacto de arriba: lo solucionamos o te devolvemos el dinero.',
+      },
+      {
+        title: 'Uso responsable',
+        text: 'Usa Wrappsapp solo con chats en los que tengas derecho a hacerlo y en los que el resto de personas estén de acuerdo. Wrappsapp no está afiliado a WhatsApp ni a Meta.',
+      },
+      {
+        title: 'Ley aplicable',
+        text: 'Estas condiciones se rigen por la ley española. Como consumidor, conservas los derechos que te reconoce la normativa de tu lugar de residencia.',
+      },
+    ],
   },
   story: {
     close: 'Borrar y salir',
