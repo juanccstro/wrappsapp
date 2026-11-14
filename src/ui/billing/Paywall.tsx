@@ -19,6 +19,8 @@ type Props = {
   onCheckout: (product: Product) => Promise<string | null>;
   onRestore: (email: string, code: string) => Promise<{ outcome?: RestoreOutcome; error?: string }>;
   onTerms: () => void;
+  /** Sends this device's invite link; returns a message to show, if any. */
+  onInvite?: () => Promise<string | null>;
 };
 
 const t = es.billing;
@@ -167,12 +169,75 @@ function Heading({ id, children }: { id: string; children: ReactNode }) {
   );
 }
 
+/** The free way: friends who make their first Wrapped through your link. */
+function InviteBox({
+  invite,
+  onInvite,
+}: {
+  invite: NonNullable<UsageStatus['invite']>;
+  onInvite: () => Promise<string | null>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const done = Math.min(invite.progress, invite.needed);
+  return (
+    <div className="rounded-2xl border border-[var(--wr-d)]/40 bg-[var(--wr-d)]/10 p-3.5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-display text-sm font-black">{es.invite.title}</p>
+        <span className="shrink-0 text-xs font-bold whitespace-nowrap tabular-nums text-white/85">
+          {es.invite.progress(done, invite.needed)}
+        </span>
+      </div>
+      <p className="mt-1 text-xs leading-relaxed text-white/80">{es.invite.text(invite.needed)}</p>
+      <div className="mt-3 flex items-center gap-3">
+        <div
+          className="flex flex-1 gap-1.5"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={invite.needed}
+          aria-valuenow={done}
+          aria-label={es.invite.progress(done, invite.needed)}
+        >
+          {Array.from({ length: invite.needed }, (_, i) => (
+            <span
+              key={i}
+              className={`h-2 flex-1 rounded-full ${i < done ? 'bg-[var(--wr-d)]' : 'bg-white/15'}`}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            setMessage(null);
+            void onInvite().then((text) => {
+              setMessage(text);
+              setBusy(false);
+            });
+          }}
+          className="min-h-9 cursor-pointer rounded-full bg-white px-4 text-sm font-bold text-[#12062b] hover:bg-white/90 disabled:opacity-60"
+        >
+          {es.invite.button}
+        </button>
+      </div>
+      {message && (
+        <p role="status" className="mt-2 text-xs text-white/85">
+          {message}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Plans({
   titleId,
   unlocking,
   onCheckout,
   onRestoreView,
   onTerms,
+  status,
+  onInvite,
 }: Props & { titleId: string; unlocking: boolean; onRestoreView: () => void }) {
   const [product, setProduct] = useState<Product>('unlimited');
   const [accepted, setAccepted] = useState(false);
@@ -257,6 +322,10 @@ function Plans({
         })}
         <p className="text-center text-xs text-white/65">{t.oneTime}</p>
       </div>
+
+      {status?.invite && !status.unlimited && onInvite && (
+        <InviteBox invite={status.invite} onInvite={onInvite} />
+      )}
 
       <label
         htmlFor={consentId}

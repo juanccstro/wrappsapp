@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import type { PersonCard, Slide, WrappedResult } from '../../core';
+import type { Slide, WrappedResult } from '../../core';
 import { formatNumber } from '../../core/templates/es/format';
 import { es } from '../../i18n/es';
 import { Avatar } from '../slides/common';
@@ -39,21 +39,34 @@ function Watermark() {
             marginLeft: i % 2 ? -260 : 0,
           }}
         >
-          {`${es.share.watermark}   ·   ${es.share.watermark}   ·   ${es.share.watermark}`}
+          {Array.from({ length: 6 }, () => es.share.watermark).join('   ·   ')}
         </p>
       ))}
     </div>
   );
 }
 
-type FrameProps = { wrapped: WrappedResult; watermark?: boolean; children: ReactNode };
+type FrameProps = {
+  palette: number;
+  period: string;
+  watermark?: boolean;
+  /**
+   * Made for Instagram and WhatsApp stories: the top and bottom stay clear of the app's own
+   * bars, and the footer invites whoever sees it to make theirs.
+   */
+  story?: boolean;
+  children: ReactNode;
+};
+
+/** Where the web lives, as shown on images ("wrappsapp.vercel.app"). */
+const siteHost = () => (typeof window === 'undefined' ? '' : window.location.host);
 
 /** Common frame of every exported image: palette, brand line and footer. */
-function Frame({ wrapped, watermark = false, children }: FrameProps) {
+function Frame({ palette, period, watermark = false, story = false, children }: FrameProps) {
   return (
     <div
       style={{
-        ...paletteVars(wrapped.theme.palette),
+        ...paletteVars(palette),
         width: POSTER.width,
         height: POSTER.height,
         boxSizing: 'border-box',
@@ -61,7 +74,7 @@ function Frame({ wrapped, watermark = false, children }: FrameProps) {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        padding: 96,
+        padding: story ? '230px 96px 330px' : 96,
         color: '#ffffff',
         fontFamily: 'var(--font-sans)',
         background: 'linear-gradient(160deg, var(--wr-a), var(--wr-c) 55%, var(--wr-d))',
@@ -95,7 +108,7 @@ function Frame({ wrapped, watermark = false, children }: FrameProps) {
 
       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1 }}>
         <p style={{ ...display, margin: 0, fontSize: 40, letterSpacing: 6, color: 'var(--wr-hi)' }}>
-          {es.app.name.toUpperCase()} · {wrapped.period.label.toUpperCase()}
+          {es.app.name.toUpperCase()} · {period.toUpperCase()}
         </p>
         <div
           style={{
@@ -108,7 +121,24 @@ function Frame({ wrapped, watermark = false, children }: FrameProps) {
         >
           {children}
         </div>
-        <p style={{ margin: 0, fontSize: 30, opacity: 0.8 }}>{es.share.footer}</p>
+        {story ? (
+          <p
+            style={{
+              ...display,
+              alignSelf: 'center',
+              margin: 0,
+              padding: '22px 44px',
+              borderRadius: 999,
+              background: '#ffffff',
+              color: '#12062b',
+              fontSize: 38,
+            }}
+          >
+            {es.share.storyCta} · {siteHost()}
+          </p>
+        ) : (
+          <p style={{ margin: 0, fontSize: 30, opacity: 0.8 }}>{es.share.footer}</p>
+        )}
       </div>
       {watermark && <Watermark />}
     </div>
@@ -147,7 +177,7 @@ export function SummaryPoster({
 }) {
   const name = (idx: number) => wrapped.participants[idx]?.name ?? '';
   return (
-    <Frame wrapped={wrapped} watermark={watermark}>
+    <Frame palette={wrapped.theme.palette} period={wrapped.period.label} watermark={watermark}>
       <p style={{ ...display, margin: '56px 0 36px', fontSize: 104, lineHeight: 1.02 }}>
         {wrapped.chatName ?? es.app.tagline}
       </p>
@@ -199,32 +229,81 @@ export function SummaryPoster({
   );
 }
 
+/** What a person card needs (from the Wrapped, or from a shared link). */
+export type PosterCard = {
+  idx: number;
+  name: string;
+  label: string;
+  title: string;
+  phrase: string;
+  stats: { label: string; value: string }[];
+};
+
+/**
+ * "¿Cuál eres tú?": one person's card as an Instagram or WhatsApp story. The archetype is the
+ * hero (it is what people share about themselves); the footer asks the viewer for theirs.
+ */
 export function PersonPoster({
-  wrapped,
   card,
+  palette,
+  period,
+  chatName,
   watermark = false,
 }: {
-  wrapped: WrappedResult;
-  card: PersonCard;
+  card: PosterCard;
+  palette: number;
+  period: string;
+  chatName: string | null;
   watermark?: boolean;
 }) {
   return (
-    <Frame wrapped={wrapped} watermark={watermark}>
-      <div style={{ marginTop: 96 }}>
-        <Avatar idx={card.idx} name={card.name} size={340} />
+    <Frame palette={palette} period={period} watermark={watermark} story>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 36 }}>
+        <Avatar idx={card.idx} name={card.name} size={200} />
+        <div style={{ minWidth: 0 }}>
+          <p
+            style={{
+              ...display,
+              margin: 0,
+              fontSize: 84,
+              lineHeight: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {card.name}
+          </p>
+          {chatName && (
+            <p style={{ margin: '14px 0 0', fontSize: 36, opacity: 0.85 }}>{chatName}</p>
+          )}
+        </div>
       </div>
-      <p style={{ ...display, margin: '48px 0 28px', fontSize: 112, lineHeight: 1 }}>{card.name}</p>
-      <p style={chip}>{card.label}</p>
-      <p style={{ ...display, margin: '64px 0 0', fontSize: 74, lineHeight: 1.08 }}>{card.title}</p>
-      <p style={{ margin: '40px 0 0', fontSize: 46, lineHeight: 1.3, opacity: 0.95 }}>
+
+      <p style={{ ...display, margin: '84px 0 0', fontSize: 40, letterSpacing: 4, opacity: 0.85 }}>
+        {es.share.storyIs.toUpperCase()}
+      </p>
+      <p
+        style={{
+          ...display,
+          margin: '12px 0 0',
+          fontSize: card.label.length > 16 ? 112 : 136,
+          lineHeight: 0.98,
+          color: 'var(--wr-hi)',
+        }}
+      >
+        {card.label}
+      </p>
+      <p style={{ ...display, margin: '44px 0 0', fontSize: 60, lineHeight: 1.1 }}>{card.title}</p>
+      <p style={{ margin: '32px 0 0', fontSize: 42, lineHeight: 1.3, opacity: 0.95 }}>
         {card.phrase}
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginTop: 72 }}>
-        {card.stats.map((stat) => (
-          <div key={stat.label} style={{ ...tile, padding: '28px 20px', textAlign: 'center' }}>
-            <p style={{ margin: 0, fontSize: 28, lineHeight: 1.2, opacity: 0.85 }}>{stat.label}</p>
-            <p style={{ ...display, margin: '10px 0 0', fontSize: 44, lineHeight: 1.1 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginTop: 64 }}>
+        {card.stats.slice(0, 3).map((stat) => (
+          <div key={stat.label} style={{ ...tile, padding: '26px 20px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 26, lineHeight: 1.2, opacity: 0.85 }}>{stat.label}</p>
+            <p style={{ ...display, margin: '10px 0 0', fontSize: 42, lineHeight: 1.1 }}>
               {stat.value}
             </p>
           </div>

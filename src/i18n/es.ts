@@ -32,7 +32,7 @@ export const es = {
       },
       {
         title: 'Qué se guarda para el límite gratis',
-        text: 'Para saber qué chats tienes desbloqueados se guarda un identificador de este dispositivo (en una cookie técnica y en el almacenamiento del navegador) y, para reconocerlo si borras esos datos, una huella cifrada del dispositivo combinada con tu red. De cada chat solo se guarda una huella cifrada que sirve para no cobrarte dos veces el mismo y de la que no se puede reconstruir nada. Se usa solo para esto y se borra a los 2 años sin uso. Solo si vas a pagar desde un Wrapped, el texto del chat se guarda un momento en tu propio dispositivo (nunca en el servidor) para devolverte a él al volver del pago, y se borra en cuanto vuelves o, como mucho, a las 2 horas.',
+        text: 'Para saber qué chats tienes desbloqueados se guarda un identificador de este dispositivo (en una cookie técnica y en el almacenamiento del navegador) y, para reconocerlo si borras esos datos, una huella cifrada del dispositivo combinada con tu red. De cada chat solo se guarda una huella cifrada que sirve para no cobrarte dos veces el mismo y de la que no se puede reconstruir nada. Para las invitaciones, cada dispositivo tiene un código aleatorio que se añade a los enlaces que compartes; si alguien hace su primer Wrapped con él, se anota a tu dispositivo, sin saber quién es. Se usa solo para esto y se borra a los 2 años sin uso. Solo si vas a pagar desde un Wrapped, el texto del chat se guarda un momento en tu propio dispositivo (nunca en el servidor) para devolverte a él al volver del pago, y se borra en cuanto vuelves o, como mucho, a las 2 horas.',
       },
       {
         title: 'Pagos',
@@ -40,7 +40,7 @@ export const es = {
       },
       {
         title: 'Sin publicidad ni seguimiento',
-        text: 'No hay anuncios, analítica sobre lo que escribes ni cookies de terceros. Las imágenes que compartes se crean en tu dispositivo y solo salen si tú las envías.',
+        text: 'No hay anuncios, analítica sobre lo que escribes ni cookies de terceros. Las imágenes que compartes se crean en tu dispositivo y solo salen si tú las envías. El enlace «Enviar al grupo» lleva dentro solo el podio y las tarjetas de cada persona (nombres, apodos y unos pocos números), nunca mensajes, y va en la parte del enlace que el navegador no envía a ningún servidor: solo lo ve quien lo recibe.',
       },
       {
         title: 'Tus derechos',
@@ -124,8 +124,21 @@ export const es = {
     working: 'Preparando la imagen…',
     error: 'No se ha podido crear la imagen. Vuelve a intentarlo.',
     /** Under the share buttons of a locked Wrapped. */
-    hdUpsell: 'Imagen en HD y sin marca de agua',
-    watermark: 'VERSIÓN GRATUITA · WRAPPSAPP',
+    watermark: 'WRAPPSAPP',
+    /** "¿Cuál eres tú?" story card. */
+    storyCta: '¿Y tú cuál eres?',
+    storyIs: 'En el grupo es',
+    whoAreYou: '¿Cuál eres tú?',
+    whoAreYouText:
+      'Elige a quién y crea su tarjeta para historias de Instagram o estados de WhatsApp.',
+    hdLocked: 'Sin marca de agua y en HD al desbloquear este chat',
+    hdUnlock: 'Desbloquear',
+    /** "Enviar al grupo": the shared link. */
+    sendToGroup: 'Enviar al grupo',
+    linkText: (chat: string | null) =>
+      chat ? `Mirad nuestro Wrapped de «${chat}»` : 'Mirad nuestro Wrapped de WhatsApp',
+    linkCopied: 'Enlace copiado. Pégalo en el grupo.',
+    linkError: 'No se ha podido crear el enlace. Vuelve a intentarlo.',
     saveTitle: 'Tu imagen está lista',
     saveGallery: 'Guardar en la galería',
     saveDownload: 'Descargar imagen',
@@ -181,6 +194,34 @@ export const es = {
     },
   },
   /** Small labels next to the figures inside the slides. */
+  shared: {
+    eyebrow: 'Os han enviado un Wrapped',
+    fallbackTitle: 'Nuestro Wrapped',
+    podium: 'El podio',
+    messages: 'mensajes',
+    cards: 'Las tarjetas del grupo',
+    cardsHint: 'Toca la tuya para crear tu tarjeta de historia.',
+    mine: 'Esta soy yo',
+    lockedTitle: 'Tarjetas bloqueadas',
+    lockedText: 'Quien lo ha compartido aún no ha desbloqueado este Wrapped.',
+    cta: 'Haz el Wrapped de tu grupo',
+    ctaHint: 'Gratis · tus mensajes no salen de tu móvil',
+    broken: 'Este enlace no funciona',
+    brokenText:
+      'Puede que se haya cortado al copiarlo. Pide que te lo vuelvan a enviar, o haz el vuestro.',
+  },
+  invite: {
+    title: 'O gratis: invita a tus amigos',
+    text: (needed: number) =>
+      `Cuando ${needed} personas hagan su primer Wrapped con tu enlace, desbloqueas un chat gratis.`,
+    progress: (done: number, needed: number) => `${done} de ${needed}`,
+    button: 'Invitar',
+    shareText: 'Haz el Wrapped de tu grupo de WhatsApp',
+    toastFriend: (done: number, needed: number) =>
+      `Alguien ha hecho su Wrapped con tu enlace: ${done} de ${needed} para un desbloqueo gratis.`,
+    toastEarned:
+      'Has ganado un desbloqueo gratis: tu próximo chat se verá completo, o toca un candado del que tengas abierto.',
+  },
   lock: {
     title: 'Diapositiva bloqueada',
     text: 'Desbloquea este chat para ver quién gana aquí, y el resto de rankings y premios.',
@@ -301,7 +342,7 @@ export const es = {
       },
       {
         title: 'Uso gratuito',
-        text: 'Cada dispositivo tiene 1 chat completo gratis. Con el resto de chats el Wrapped se ve gratis, pero algunas diapositivas, todos los datos y las imágenes en HD sin marca de agua quedan bloqueados hasta desbloquear ese chat. Volver a ver un chat desbloqueado, o cambiar su periodo, no cuesta nada. La demo es siempre gratis y completa.',
+        text: 'Cada dispositivo tiene 1 chat completo gratis. Con el resto de chats el Wrapped se ve gratis, pero algunas diapositivas, todos los datos y las imágenes en HD sin marca de agua quedan bloqueados hasta desbloquear ese chat. Volver a ver un chat desbloqueado, o cambiar su periodo, no cuesta nada. La demo es siempre gratis y completa. Además, cada vez que 2 personas hacen su primer Wrapped con tu enlace, desbloqueas un chat gratis (hasta 10). Cada dispositivo cuenta una sola vez y nunca el tuyo propio; si detectamos trampas, esos desbloqueos no cuentan.',
       },
       {
         title: 'Compras',

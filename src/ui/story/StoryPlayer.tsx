@@ -22,8 +22,11 @@ import type { SlideCtx } from '../slides/common';
 import { CARD_MS } from '../slides/PersonCards';
 import { SlideView } from '../slides/SlideView';
 import { slideDurationMs } from '../slides/timing';
+import { inviteUrl } from '../../billing/invite';
+import { encodeShared, sendLink, sharedFrom } from '../share/groupLink';
 import { ImageSaver } from '../share/ImageSaver';
-import { useShare } from '../share/useShare';
+import { PeoplePicker } from '../share/PeoplePicker';
+import { cardsOf, useShare } from '../share/useShare';
 import { paletteVars, slideGradient } from '../theme/palettes';
 
 type Props = {
@@ -44,6 +47,8 @@ type Props = {
   onUnlock: (at: number) => void;
   /** Checking or applying a purchase. */
   unlocking?: boolean;
+  /** This device's invite code, added to links sent to the group. */
+  inviteCode?: string;
 };
 
 /** The people slide lasts as long as its cards need. */
@@ -124,6 +129,7 @@ export function StoryPlayer({
   unlocked,
   onUnlock,
   unlocking = false,
+  inviteCode,
 }: Props) {
   const reduced = useReducedMotion() ?? false;
   const slides = wrapped.slides;
@@ -144,6 +150,32 @@ export function StoryPlayer({
 
   const share = useShare(wrapped, unlocked);
   const { run: runShare, status: shareStatus, make: makePoster } = share;
+  const people = useMemo(() => cardsOf(wrapped), [wrapped]);
+  const [picking, setPicking] = useState(false);
+
+  // "Enviar al grupo": a link with the podium and the cards (locked stays locked).
+  const [linkStatus, setLinkStatus] = useState<'idle' | 'working'>('idle');
+  const [linkMessage, setLinkMessage] = useState<string | null>(null);
+  useEffect(() => {
+    if (!linkMessage) return;
+    const timer = setTimeout(() => setLinkMessage(null), 3500);
+    return () => clearTimeout(timer);
+  }, [linkMessage]);
+  const sendToGroup = async () => {
+    setLinkStatus('working');
+    try {
+      const hash = await encodeShared(sharedFrom(wrapped, unlocked));
+      const result = await sendLink(
+        inviteUrl(inviteCode, hash),
+        es.share.linkText(wrapped.chatName),
+      );
+      if (result === 'copied') setLinkMessage(es.share.linkCopied);
+      if (result === 'error') setLinkMessage(es.share.linkError);
+    } catch {
+      setLinkMessage(es.share.linkError);
+    }
+    setLinkStatus('idle');
+  };
 
   // Development only: lets the poster be inspected without triggering a download.
   useEffect(() => {
@@ -159,7 +191,7 @@ export function StoryPlayer({
       running: !userPaused && !holding && !hidden,
       answers,
       onAnswer: (id, idx) => setAnswers((a) => ({ ...a, [id]: idx })),
-      onShare: (target) => void runShare(target, 'share'),
+      onShare: (target) => void runShare(target),
       sharing: shareStatus === 'working',
     }),
     [wrapped, reduced, userPaused, holding, hidden, answers, runShare, shareStatus],
@@ -503,36 +535,32 @@ export function StoryPlayer({
             className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 px-6 pb-6"
             data-no-nav
           >
+            {!isDemo && (
+              <Button disabled={linkStatus === 'working'} onClick={() => void sendToGroup()}>
+                <ShareIcon />
+                {es.share.sendToGroup}
+              </Button>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <Button
+                variant={isDemo ? 'primary' : 'secondary'}
                 className="!px-3"
-                disabled={shareStatus === 'working'}
-                onClick={() => void runShare({ type: 'summary' }, 'share')}
+                disabled={shareStatus === 'working' || people.length === 0}
+                onClick={() => setPicking(true)}
               >
-                <ShareIcon />
-                {es.share.share}
+                {es.share.whoAreYou}
               </Button>
               <Button
                 variant="secondary"
                 className="!px-3"
                 aria-label={es.share.download}
                 disabled={shareStatus === 'working'}
-                onClick={() => void runShare({ type: 'summary' }, 'download')}
+                onClick={() => void runShare({ type: 'summary' })}
               >
                 <DownloadIcon />
                 {es.share.downloadShort}
               </Button>
             </div>
-            {!unlocked && (
-              <button
-                type="button"
-                onClick={() => onUnlock(index)}
-                className="flex min-h-9 cursor-pointer items-center justify-center gap-1.5 text-xs font-semibold text-white/85 underline underline-offset-4"
-              >
-                <LockIcon className="text-[var(--wr-hi)]" />
-                {es.share.hdUpsell}
-              </button>
-            )}
             <Button variant="secondary" onClick={onOpenReport}>
               {!unlocked && <LockIcon />}
               {es.story.report}
@@ -558,16 +586,30 @@ export function StoryPlayer({
         <p
           role="status"
           aria-live="polite"
-          className={`pointer-events-none absolute inset-x-6 bottom-56 z-20 rounded-2xl bg-black/70 px-4 py-2 text-center text-sm font-semibold transition-opacity ${shareStatus === 'idle' ? 'opacity-0' : 'opacity-100'}`}
+          className={`pointer-events-none absolute inset-x-6 bottom-72 z-20 rounded-2xl bg-black/70 px-4 py-2 text-center text-sm font-semibold transition-opacity ${shareStatus === 'idle' && !linkMessage ? 'opacity-0' : 'opacity-100'}`}
         >
           {shareStatus === 'working'
             ? es.share.working
             : shareStatus === 'error'
               ? es.share.error
-              : ''}
+              : (linkMessage ?? '')}
         </p>
         {share.poster}
-        <ImageSaver image={share.ready} onClose={share.clearReady} />
+        <PeoplePicker
+          people={people}
+          open={picking}
+          busy={shareStatus === 'working'}
+          onClose={() => setPicking(false)}
+          onPick={(idx) => {
+            setPicking(false);
+            void runShare({ type: 'person', idx });
+          }}
+        />
+        <ImageSaver
+          image={share.ready}
+          onClose={share.clearReady}
+          onUnlock={isDemo ? undefined : () => onUnlock(index)}
+        />
       </div>
     </MotionConfig>
   );

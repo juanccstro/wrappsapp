@@ -1,6 +1,10 @@
 /** Business rules of the paid plan. Prices are in euro cents. */
 /** Chats a device unlocks for free (the first one): the rest play with some slides locked. */
 export const FREE_USES = 1;
+/** Friends who must make their first Wrapped through someone's link to earn them an unlock. */
+export const INVITES_PER_UNLOCK = 2;
+/** At most this many chats can be unlocked by inviting, per device. */
+export const MAX_INVITE_UNLOCKS = 10;
 /** Devices a purchase can be used on (the buyer's phone, computer, tablet). */
 export const MAX_DEVICES = 3;
 

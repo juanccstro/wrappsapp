@@ -49,7 +49,8 @@ test('the demo plays from the landing to the final card, without leaving the dev
     `Diapositiva ${total} de ${total}`,
   );
 
-  await expect(page.getByRole('button', { name: 'Compartir', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '¿Cuál eres tú?' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Enviar al grupo' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Descargar imagen' })).toBeVisible();
 
   // The full report opens from the final card and comes back to it.

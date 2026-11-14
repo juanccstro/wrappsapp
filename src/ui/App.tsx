@@ -1,6 +1,9 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { createAudioPlayer, readMutePreference, saveMutePreference } from '../audio/player';
 import type { Product } from '../billing/api';
+import { captureInvite, inviteUrl } from '../billing/invite';
+import { es } from '../i18n/es';
+import { encodeShared, hasSharedHash, sendLink, sharedFrom } from './share/groupLink';
 import { savePendingChat, takePendingChat, type PendingChat } from '../billing/pendingChat';
 import { useBilling } from '../billing/useBilling';
 import { Paywall, type PaywallView } from './billing/Paywall';
@@ -20,8 +23,38 @@ const loadStory = () => import('./story/StoryPlayer');
 const StoryPlayer = lazy(() => loadStory().then((m) => ({ default: m.StoryPlayer })));
 const Report = lazy(() => import('./report/Report').then((m) => ({ default: m.Report })));
 
+const SharedView = lazy(() =>
+  import('./shared/SharedView').then((m) => ({ default: m.SharedView })),
+);
+
 /** Read once per page load: the URL is cleaned as soon as the app starts. */
 const RETURNING_FROM_PAYMENT = new URLSearchParams(window.location.search).has('checkout');
+/** Opened from a link sent to a group: "#w=…" holds that group's podium and cards. */
+const SHARED_HASH = hasSharedHash(window.location.hash) ? window.location.hash : null;
+// Came through someone's link: remember their invite code (and tidy the address).
+captureInvite();
+
+const INVITE_SEEN = 'wr_invite_seen';
+
+/** A short message at the top that goes away by itself. */
+function Toast({ text, onDone }: { text: string | null; onDone: () => void }) {
+  useEffect(() => {
+    if (!text) return;
+    const timer = setTimeout(onDone, 6000);
+    return () => clearTimeout(timer);
+  }, [text, onDone]);
+  if (!text) return null;
+  return (
+    <button
+      type="button"
+      role="status"
+      onClick={onDone}
+      className="absolute inset-x-4 top-[max(0.75rem,env(safe-area-inset-top))] z-[60] cursor-pointer rounded-2xl border border-white/15 bg-[#12062b]/95 px-4 py-3 text-left text-sm font-semibold shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur-md"
+    >
+      {text}
+    </button>
+  );
+}
 
 /** The chat kept before paying, taken (and deleted) once per page load. */
 let pendingOnce: Promise<PendingChat | null> | null = null;
@@ -108,6 +141,52 @@ export function App() {
     return billing.checkout(product);
   };
 
+  const [sharedHash, setSharedHash] = useState(SHARED_HASH);
+  const [toast, setToast] = useState<string | null>(null);
+  const clearToast = useCallback(() => setToast(null), []);
+
+  // Someone made their Wrapped through this device's link: say so once, with the progress.
+  const invite = billing.status?.invite;
+  useEffect(() => {
+    if (!invite) return;
+    try {
+      const seen = localStorage.getItem(INVITE_SEEN);
+      localStorage.setItem(INVITE_SEEN, `${invite.friends}:${invite.earned}`);
+      if (seen === null) return;
+      const [friends = 0, earned = 0] = seen.split(':').map(Number);
+      if (invite.earned > earned) setToast(es.invite.toastEarned);
+      else if (invite.friends > friends) {
+        setToast(es.invite.toastFriend(invite.progress, invite.needed));
+      }
+    } catch {
+      // Storage blocked: no message, the progress is still in the plans.
+    }
+  }, [invite]);
+
+  /**
+   * "Invitar" in the plans: from a Wrapped, its group link (the most convincing invite);
+   * anywhere else, the web with this device's code.
+   */
+  const sendInvite = async (): Promise<string | null> => {
+    try {
+      const code = billing.status?.invite?.code;
+      const onWrapped = screen.name === 'story' || screen.name === 'report';
+      const result = onWrapped
+        ? await sendLink(
+            inviteUrl(code, await encodeShared(sharedFrom(screen.wrapped, screen.unlocked))),
+            es.share.linkText(screen.wrapped.chatName),
+          )
+        : await sendLink(inviteUrl(code), es.invite.shareText);
+      return result === 'copied'
+        ? es.share.linkCopied
+        : result === 'error'
+          ? es.share.linkError
+          : null;
+    } catch {
+      return es.share.linkError;
+    }
+  };
+
   const showBadge =
     screen.name === 'landing' || screen.name === 'upload' || screen.name === 'period';
   const [audio] = useState(createAudioPlayer);
@@ -120,8 +199,26 @@ export function App() {
     });
   }, []);
 
+  if (sharedHash) {
+    return (
+      <PhoneFrame>
+        <Suspense fallback={<Loading />}>
+          <SharedView
+            hash={sharedHash}
+            onMakeYours={() => {
+              window.history.replaceState(null, '', window.location.pathname);
+              setSharedHash(null);
+              goUpload();
+            }}
+          />
+        </Suspense>
+      </PhoneFrame>
+    );
+  }
+
   return (
     <PhoneFrame>
+      <Toast text={toast} onDone={clearToast} />
       {screen.name === 'landing' && (
         <Landing
           onStart={goUpload}
@@ -175,6 +272,7 @@ export function App() {
             unlocked={screen.unlocked}
             onUnlock={(at) => void unlock(at)}
             unlocking={unlocking}
+            inviteCode={billing.status?.invite?.code}
             onOpenReport={openReport}
             audio={audio}
             muted={muted}
@@ -204,6 +302,7 @@ export function App() {
         errorCode={paywallError}
         onClose={() => setPaywall(null)}
         onCheckout={checkout}
+        onInvite={sendInvite}
         onRestore={billing.restore}
         onTerms={() => {
           setPaywall(null);

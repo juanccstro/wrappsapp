@@ -1,4 +1,5 @@
 import { crossDeviceFingerprint, deviceFingerprint, readDeviceId, saveDeviceId } from './device';
+import { storedInvite } from './invite';
 
 /** Mirrors server/billing.ts (the client never imports server code). */
 export type UsageStatus = {
@@ -8,6 +9,8 @@ export type UsageStatus = {
   limit: number;
   unlimited: boolean;
   remaining: number | null;
+  /** Inviting friends: code for links and progress towards the next free unlock. */
+  invite?: { code: string; friends: number; progress: number; needed: number; earned: number };
 };
 
 export type Product = 'chat' | 'pack3' | 'unlimited';
@@ -54,7 +57,7 @@ async function call<T>(path: string, body: Record<string, unknown> = {}): Promis
 export const fetchStatus = () => call<{ status: UsageStatus }>('status');
 
 export const spendUse = (chatKey: string) =>
-  call<{ allowed: boolean; status: UsageStatus }>('use', { chatKey });
+  call<{ allowed: boolean; status: UsageStatus }>('use', { chatKey, invite: storedInvite() });
 
 export const startCheckout = (product: Product) => call<{ url: string }>('checkout', { product });
 

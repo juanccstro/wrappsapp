@@ -1,7 +1,7 @@
 import type Stripe from 'stripe';
 import { createBilling, type Billing, type Status } from './billing.js';
 import { env, isProductId, PENDING_TTL_S, type ProductId } from './config.js';
-import { isEmail, isHash, networkPrefix, newRecoveryCode } from './ids.js';
+import { isEmail, isHash, isInviteCode, networkPrefix, newRecoveryCode } from './ids.js';
 import { getStore } from './store.js';
 import {
   createCheckout,
@@ -104,7 +104,8 @@ export async function useHandler(request: Request): Promise<Response> {
   const body = await readBody(request);
   if (!isHash(body.chatKey)) return json({ error: 'bad_request' }, 400);
   const { id, device, cookie } = await identify(billing, request, body);
-  const result = await billing.consume(id, device, body.chatKey);
+  const invite = isInviteCode(body.invite) ? body.invite : undefined;
+  const result = await billing.consume(id, device, body.chatKey, invite);
   return json(result, 200, cookie);
 }
 

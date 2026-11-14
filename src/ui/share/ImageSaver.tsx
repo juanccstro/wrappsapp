@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { es } from '../../i18n/es';
 import { Button } from '../components/Shell';
-import { CloseIcon, DownloadIcon, ShareIcon } from '../components/icons';
+import { CloseIcon, DownloadIcon, LockIcon, ShareIcon } from '../components/icons';
 import { saveImage, saveTarget, shareOrDownload } from './share';
 
 export type ReadyImage = {
@@ -9,6 +9,8 @@ export type ReadyImage = {
   fileName: string;
   /** A tall image (the report): scrolls instead of fitting the screen. */
   long?: boolean;
+  /** False: made smaller and watermarked (the chat is not unlocked). */
+  hd?: boolean;
 };
 
 /**
@@ -16,7 +18,16 @@ export type ReadyImage = {
  * the share sheet (the way to the gallery on iPhone) right after a tap: so the image is made
  * first and saved with a second tap here. It can also be long-pressed and saved directly.
  */
-export function ImageSaver({ image, onClose }: { image: ReadyImage | null; onClose: () => void }) {
+export function ImageSaver({
+  image,
+  onClose,
+  onUnlock,
+}: {
+  image: ReadyImage | null;
+  onClose: () => void;
+  /** Offered under a watermarked image: unlock the chat to get it in HD, without the mark. */
+  onUnlock?: () => void;
+}) {
   const url = useMemo(() => (image ? URL.createObjectURL(image.blob) : null), [image]);
   useEffect(() => () => (url ? URL.revokeObjectURL(url) : undefined), [url]);
   const [busy, setBusy] = useState(false);
@@ -96,6 +107,20 @@ export function ImageSaver({ image, onClose }: { image: ReadyImage | null; onClo
           {es.share.saveShare}
         </Button>
       </div>
+      {image.hd === false && onUnlock && (
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            onUnlock();
+          }}
+          className="mt-3 flex min-h-9 cursor-pointer items-center justify-center gap-1.5 text-xs font-semibold text-white/85"
+        >
+          <LockIcon className="text-[var(--wr-hi)]" />
+          {es.share.hdLocked}
+          <span className="underline underline-offset-4">{es.share.hdUnlock}</span>
+        </button>
+      )}
     </div>
   );
 }

@@ -1,16 +1,38 @@
-import { FINGERPRINT_TTL_S, FREE_USES, MAX_DEVICES, PRODUCTS, type ProductId } from './config.js';
+import {
+  FINGERPRINT_TTL_S,
+  FREE_USES,
+  INVITES_PER_UNLOCK,
+  MAX_DEVICES,
+  MAX_INVITE_UNLOCKS,
+  PRODUCTS,
+  type ProductId,
+} from './config.js';
 import {
   isDeviceId,
   keyedHash,
   newDeviceId,
+  newInviteCode,
   normalizeCode,
   normalizeEmail,
   sameHash,
 } from './ids.js';
 import type { Store } from './store.js';
 
-/** What a device has done. `used` holds keyed hashes of chats, never their content. */
-type DeviceRecord = { used: string[]; buyer?: string; created: number };
+/**
+ * What a device has done. `used` holds keyed hashes of chats, never their content.
+ * Invites: `invite` is this device's code for shared links; `invitedBy` the device whose link
+ * brought it (counted once, ever); `invited` the devices it brought; `earned` the chats it
+ * unlocked by inviting (each one is one more free chat).
+ */
+type DeviceRecord = {
+  used: string[];
+  buyer?: string;
+  created: number;
+  invite?: string;
+  invitedBy?: string;
+  invited?: string[];
+  earned?: number;
+};
 export type PurchaseState = 'active' | 'refund_pending' | 'refunded';
 
 /** One paid checkout. `code` is the keyed hash of its recovery code. */
@@ -43,6 +65,8 @@ export type Status = {
   unlimited: boolean;
   /** Null when unlimited. */
   remaining: number | null;
+  /** Inviting friends: the code for links, and progress towards the next free unlock. */
+  invite?: { code: string; friends: number; progress: number; needed: number; earned: number };
 };
 
 const MAX_SPENT = 2000;
@@ -78,12 +102,24 @@ function revoke(buyer: BuyerRecord, product: ProductId) {
 function mergeDevices(into: DeviceRecord, from: DeviceRecord): DeviceRecord {
   const used = [...into.used];
   for (const chat of from.used) if (!used.includes(chat)) used.push(chat);
-  return {
+  const invited = [...(into.invited ?? [])];
+  for (const id of from.invited ?? []) if (!invited.includes(id)) invited.push(id);
+  const merged: DeviceRecord = {
     used,
     buyer: into.buyer ?? from.buyer,
     created: Math.min(into.created, from.created),
   };
+  if (into.invite) merged.invite = into.invite;
+  const invitedBy = into.invitedBy ?? from.invitedBy;
+  if (invitedBy) merged.invitedBy = invitedBy;
+  if (invited.length) merged.invited = invited;
+  const earned = Math.max(into.earned ?? 0, from.earned ?? 0);
+  if (earned) merged.earned = earned;
+  return merged;
 }
+
+/** Free chats of a device: the first one, plus one for each unlock earned by inviting. */
+const freeOf = (device: DeviceRecord) => FREE_USES + (device.earned ?? 0);
 
 export function createBilling(store: Store, secret: string) {
   const hash = (purpose: string, value: string) => keyedHash(secret, purpose, value);
@@ -94,9 +130,11 @@ export function createBilling(store: Store, secret: string) {
 
   const statusOf = (id: string, device: DeviceRecord, buyer: BuyerRecord | null): Status => {
     const unlimited = buyer?.unlimited ?? false;
-    const limit = FREE_USES + (buyer?.credits ?? 0);
-    const used =
-      Math.min(device.used.length, FREE_USES) + (unlimited ? 0 : (buyer?.spent.length ?? 0));
+    const free = freeOf(device);
+    const limit = free + (buyer?.credits ?? 0);
+    const used = Math.min(device.used.length, free) + (unlimited ? 0 : (buyer?.spent.length ?? 0));
+    const friends = device.invited?.length ?? 0;
+    const earned = device.earned ?? 0;
     return {
       enforced: true,
       deviceId: id,
@@ -104,6 +142,16 @@ export function createBilling(store: Store, secret: string) {
       limit,
       unlimited,
       remaining: unlimited ? null : Math.max(0, limit - used),
+      ...(device.invite && {
+        invite: {
+          code: device.invite,
+          friends,
+          progress:
+            earned >= MAX_INVITE_UNLOCKS ? 0 : Math.max(0, friends - earned * INVITES_PER_UNLOCK),
+          needed: INVITES_PER_UNLOCK,
+          earned,
+        },
+      }),
     };
   };
 
@@ -174,14 +222,52 @@ export function createBilling(store: Store, secret: string) {
   }
 
   async function status(id: string, device: DeviceRecord): Promise<Status> {
+    // Every device gets its invite code the first time it asks.
+    for (let attempt = 0; attempt < 3 && !device.invite; attempt++) {
+      const code = newInviteCode();
+      if (await store.setIfAbsent(`invite:${code}`, id)) {
+        device.invite = code;
+        await store.set(deviceKey(id), device);
+      }
+    }
     return statusOf(id, device, await loadBuyer(device.buyer));
   }
 
-  /** Spends a use on a chat, unless it was already counted. */
+  /**
+   * A device that came through someone's link made its very first Wrapped: that someone gets
+   * a point, and every INVITES_PER_UNLOCK points one more free chat. Each device counts once,
+   * ever, and never for itself (another browser of the same phone is the same device).
+   */
+  async function creditInvite(id: string, device: DeviceRecord, code: string) {
+    const owner = await store.get<string>(`invite:${code}`);
+    const inviterId = owner ? ((await store.get<string>(`alias:${owner}`)) ?? owner) : null;
+    if (!inviterId || inviterId === id) return;
+    const inviter = await loadDevice(inviterId);
+    if (!inviter) return;
+    device.invitedBy = inviterId;
+    await store.set(deviceKey(id), device);
+    const invited = inviter.invited ?? [];
+    if (invited.includes(id)) return;
+    inviter.invited = [...invited, id].slice(-500);
+    const earned = inviter.earned ?? 0;
+    if (
+      earned < MAX_INVITE_UNLOCKS &&
+      inviter.invited.length >= (earned + 1) * INVITES_PER_UNLOCK
+    ) {
+      inviter.earned = earned + 1;
+    }
+    await store.set(deviceKey(inviterId), inviter);
+  }
+
+  /**
+   * Unlocks a chat with what the device has (free chats, credits, unlimited), unless it was
+   * already unlocked. `inviteCode`: the link that brought this device, if any.
+   */
   async function consume(
     id: string,
     device: DeviceRecord,
     chatKey: string,
+    inviteCode?: string,
   ): Promise<{ allowed: boolean; status: Status }> {
     const chat = hash('chat', chatKey);
     const buyer = await loadBuyer(device.buyer);
@@ -190,9 +276,11 @@ export function createBilling(store: Store, secret: string) {
       device.used.some((h) => sameHash(h, chat)) || buyer?.spent.some((h) => sameHash(h, chat));
     if (already) return { allowed: true, status: statusOf(id, device, buyer) };
 
-    if (device.used.length < FREE_USES) {
+    if (device.used.length < freeOf(device)) {
+      const first = device.used.length === 0 && !device.invitedBy;
       device.used.push(chat);
       await store.set(deviceKey(id), device);
+      if (first && inviteCode) await creditInvite(id, device, inviteCode);
       return { allowed: true, status: statusOf(id, device, buyer) };
     }
     if (buyer && device.buyer && (buyer.unlimited || buyer.spent.length < buyer.credits)) {

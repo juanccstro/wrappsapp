@@ -37,6 +37,18 @@ export function newRecoveryCode(): string {
   return code;
 }
 
+/** Invite codes travel in shared links: short, no ambiguous letters ("K7QF3MXA"). */
+export function newInviteCode(): string {
+  const bytes = randomBytes(8);
+  let code = '';
+  for (let i = 0; i < 8; i++) code += CODE_ALPHABET[(bytes[i] as number) % CODE_ALPHABET.length];
+  return code;
+}
+
+const INVITE_RE = /^[A-HJ-NP-Z2-9]{8}$/;
+export const isInviteCode = (value: unknown): value is string =>
+  typeof value === 'string' && INVITE_RE.test(value);
+
 export const normalizeCode = (code: string): string => code.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 export const normalizeEmail = (email: string): string => email.trim().toLowerCase();
