@@ -6,7 +6,7 @@ export const LEGAL = {
   owner: 'DroneScope',
   location: 'Vigo, España',
   email: 'dronescopecompare@gmail.com',
-  updated: '13 de noviembre de 2026',
+  updated: '14 de noviembre de 2026',
 } as const;
 
 /** True while any field above still holds a placeholder. */

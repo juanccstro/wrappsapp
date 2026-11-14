@@ -15,6 +15,8 @@ export type WrappedClient = {
   loadFile(file: Blob, fileName?: string): Promise<ChatSummary>;
   loadText(text: string, fileName?: string): Promise<ChatSummary>;
   analyze(period: PeriodKind): Promise<AnalysisResult>;
+  /** The loaded chat as text. */
+  text(): Promise<string>;
   /** Forgets the chat and stops the Worker. */
   dispose(): void;
 };
@@ -49,6 +51,7 @@ export function createWrappedClient(): WrappedClient {
     loadFile: (file, fileName) => call({ type: 'load', file, fileName }),
     loadText: (text, fileName) => call({ type: 'loadText', text, fileName }),
     analyze: (period) => call({ type: 'analyze', period }),
+    text: () => call({ type: 'text' }),
     dispose() {
       worker.terminate();
       for (const entry of pending.values()) entry.reject(new SessionError('unexpected'));

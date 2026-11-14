@@ -52,6 +52,8 @@ export { SessionError, type SessionErrorCode } from './errors';
 export function createSession() {
   let chat: ParsedChat | null = null;
   let chatName: string | null = null;
+  /** The text as read, kept only so the page can hold on to it across a payment. */
+  let text: string[] = [];
 
   const summarize = async (parsed: ParsedChat): Promise<ChatSummary> => ({
     participants: parsed.participants,
@@ -69,9 +71,13 @@ export function createSession() {
     ): Promise<ChatSummary> {
       chat = null;
       chatName = null;
+      text = [];
       const parser = createChatParser();
       try {
-        for await (const chunk of chunks) parser.push(chunk);
+        for await (const chunk of chunks) {
+          text.push(chunk);
+          parser.push(chunk);
+        }
         chat = parser.finish();
         chatName = detectChatName(chat, fileName);
       } catch (err) {
@@ -99,10 +105,17 @@ export function createSession() {
       };
     },
 
+    /** The loaded chat as text (to carry it across the payment page, on this device). */
+    text(): string {
+      if (!chat) throw new SessionError('no_chat_loaded');
+      return text.join('');
+    },
+
     /** "Borrar y salir": forgets the chat. */
     clear(): void {
       chat = null;
       chatName = null;
+      text = [];
     },
   };
 }

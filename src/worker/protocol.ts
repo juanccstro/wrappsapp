@@ -6,12 +6,14 @@ export type WorkerRequest =
   | { id: number; type: 'load'; file: Blob; fileName?: string }
   | { id: number; type: 'loadText'; text: string; fileName?: string }
   | { id: number; type: 'analyze'; period: PeriodKind }
+  | { id: number; type: 'text' }
   | { id: number; type: 'clear' };
 
 export type WorkerResult = {
   load: ChatSummary;
   loadText: ChatSummary;
   analyze: AnalysisResult;
+  text: string;
   clear: null;
 };
 

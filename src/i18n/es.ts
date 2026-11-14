@@ -32,11 +32,11 @@ export const es = {
       },
       {
         title: 'Qué se guarda para el límite gratis',
-        text: 'Para contar tus 2 Wrapped gratis se guarda un identificador de este dispositivo (en una cookie técnica y en el almacenamiento del navegador) y, para reconocerlo si borras esos datos, una huella cifrada del dispositivo combinada con tu red. De cada chat solo se guarda una huella cifrada que sirve para no cobrarte dos veces el mismo y de la que no se puede reconstruir nada. Se usa solo para esto y se borra a los 2 años sin uso.',
+        text: 'Para saber qué chats tienes desbloqueados se guarda un identificador de este dispositivo (en una cookie técnica y en el almacenamiento del navegador) y, para reconocerlo si borras esos datos, una huella cifrada del dispositivo combinada con tu red. De cada chat solo se guarda una huella cifrada que sirve para no cobrarte dos veces el mismo y de la que no se puede reconstruir nada. Se usa solo para esto y se borra a los 2 años sin uso. Solo si vas a pagar desde un Wrapped, el texto del chat se guarda un momento en tu propio dispositivo (nunca en el servidor) para devolverte a él al volver del pago, y se borra en cuanto vuelves o, como mucho, a las 2 horas.',
       },
       {
         title: 'Pagos',
-        text: 'Pagas en la página de Stripe y la venta se hace a través de Link, el servicio de pagos de Stripe, que actúa como vendedor: Wrappsapp nunca ve tu tarjeta ni tus datos bancarios. De tu compra se guarda el producto y una huella cifrada de tu email, para que puedas recuperarla en otro dispositivo con tu código. Stripe y Link tratan tus datos según su propia política de privacidad.',
+        text: 'Pagas en la página de Stripe y la venta se hace a través de Link, el servicio de pagos de Stripe, que actúa como vendedor: Wrappsapp nunca ve tu tarjeta ni tus datos bancarios. De tu compra se guarda el producto, una huella cifrada de tu email y los identificadores de los dispositivos donde la usas (hasta 3), para que puedas recuperarla con tu código. Stripe y Link tratan tus datos según su propia política de privacidad.',
       },
       {
         title: 'Sin publicidad ni seguimiento',
@@ -123,11 +123,25 @@ export const es = {
     shareCardRest: ' esta tarjeta',
     working: 'Preparando la imagen…',
     error: 'No se ha podido crear la imagen. Vuelve a intentarlo.',
+    /** Under the share buttons of a locked Wrapped. */
+    hdUpsell: 'Imagen en HD y sin marca de agua',
+    watermark: 'VERSIÓN GRATUITA · WRAPPSAPP',
+    saveTitle: 'Tu imagen está lista',
+    saveGallery: 'Guardar en la galería',
+    saveDownload: 'Descargar imagen',
+    saveShare: 'Compartir',
+    saveHint: 'También puedes mantener pulsada la imagen y elegir «Guardar imagen».',
+    saveHintDesktop:
+      'También puedes hacer clic derecho en la imagen y elegir «Guardar imagen como».',
     footer: 'Hecho con Wrappsapp · Los mensajes no salieron del dispositivo',
   },
   report: {
     title: 'Todos los datos',
     back: 'Volver al resumen',
+    saveImage: 'Guardar como imagen larga',
+    lockedTitle: 'Todos los datos, bloqueados',
+    lockedText:
+      'Gráfica mes a mes, mapa de calor por horas, ranking completo, ficha de cada persona y récords, y todo en una imagen larga para guardar.',
     totals: { emojis: 'emojis', media: 'archivos', links: 'enlaces' },
     overTime: 'Actividad mes a mes',
     overTimeHint: 'Mensajes enviados cada mes.',
@@ -167,6 +181,12 @@ export const es = {
     },
   },
   /** Small labels next to the figures inside the slides. */
+  lock: {
+    title: 'Diapositiva bloqueada',
+    text: 'Desbloquea este chat para ver quién gana aquí, y el resto de rankings y premios.',
+    cta: 'Desbloquear desde 0,99 €',
+    working: 'Comprobando…',
+  },
   slides: {
     messages: 'mensajes',
     words: 'palabras',
@@ -180,19 +200,26 @@ export const es = {
     cardOf: (current: number, total: number) => `Tarjeta ${current} de ${total}`,
   },
   billing: {
-    badge: (used: number, limit: number) => `${used} de ${limit} usados`,
+    badge: (used: number, limit: number) => `${used} de ${limit} desbloqueados`,
     badgeUnlimited: 'Ilimitado',
-    badgeLabel: 'Wrapped usados en este dispositivo. Toca para ver opciones.',
-    limitTitle: 'Has agotado tus Wrapped gratis',
-    limitText: (limit: number) =>
-      `Ya has creado ${limit} Wrapped en este dispositivo. Elige cómo seguir: los chats que ya hiciste se pueden volver a ver sin gastar nada.`,
-    moreTitle: 'Más Wrapped',
-    moreText: 'Elige cómo seguir creando Wrapped de tus chats.',
+    badgeLabel: 'Chats completos desbloqueados en este dispositivo. Toca para ver opciones.',
+    unlockTitle: 'Desbloquea tu Wrapped completo',
+    unlockText:
+      'Ve las diapositivas bloqueadas, todos los datos con gráficas y mapa de calor, y guarda las imágenes en HD sin marca de agua.',
+    moreTitle: 'Desbloquea más chats',
+    moreText:
+      'Tu primer chat es gratis y completo. Con los demás ves el Wrapped con algunas diapositivas bloqueadas: desbloquéalos aquí.',
+    perks: [
+      'Rankings, premios y tarjetas de cada persona',
+      'Todos los datos: gráficas, mapa de calor e imagen larga',
+      'Imágenes en HD y sin marca de agua',
+    ],
     plans: {
-      pack3: { title: 'Pack de 3', detail: '3 Wrapped más', price: '1,99 €' },
+      chat: { title: 'Este chat', detail: 'Desbloquea 1 chat', price: '0,99 €' },
+      pack3: { title: 'Pack de 3', detail: '3 chats, 0,66 € cada uno', price: '1,99 €' },
       unlimited: {
         title: 'Ilimitado',
-        detail: 'Para siempre, sin límites',
+        detail: 'Todos tus chats, para siempre',
         price: '4,99 €',
         badge: 'Mejor opción',
       },
@@ -225,13 +252,16 @@ export const es = {
       refund_pending:
         'Esta compra está en proceso de reembolso, así que ya no está activa. Si es un error, escríbenos al contacto de Condiciones.',
       refunded: 'Esta compra se reembolsó, así que ya no está activa.',
+      device_limit:
+        'Esta compra ya se usa en 3 dispositivos, el máximo. Para usarla aquí, escríbenos al contacto de Condiciones si cambiaste de móvil.',
     },
     successTitle: {
-      pack3: 'Tienes 3 Wrapped más',
-      unlimited: 'Wrapped ilimitados',
+      chat: 'Chat desbloqueado',
+      pack3: 'Tienes 3 chats para desbloquear',
+      unlimited: 'Todo desbloqueado para siempre',
     },
     successText:
-      'Pago completado. Vuelve a subir tu chat cuando quieras: ya está desbloqueado en este dispositivo.',
+      'Pago completado. Tu Wrapped ya está completo, y lo que te quede está activo en este dispositivo.',
     codeTitle: 'Tu código de recuperación',
     codeText:
       'Guárdalo o haz una captura: con él y tu email recuperas la compra en otro dispositivo o si borras los datos del navegador.',
@@ -271,15 +301,15 @@ export const es = {
       },
       {
         title: 'Uso gratuito',
-        text: 'Cada dispositivo puede crear 2 Wrapped de chats distintos gratis. Volver a ver un chat que ya hiciste, o cambiar su periodo, no cuenta. La demo es siempre gratis.',
+        text: 'Cada dispositivo tiene 1 chat completo gratis. Con el resto de chats el Wrapped se ve gratis, pero algunas diapositivas, todos los datos y las imágenes en HD sin marca de agua quedan bloqueados hasta desbloquear ese chat. Volver a ver un chat desbloqueado, o cambiar su periodo, no cuesta nada. La demo es siempre gratis y completa.',
       },
       {
         title: 'Compras',
-        text: 'Pack de 3 Wrapped: 1,99 €. Acceso ilimitado para siempre: 4,99 €. Precios finales con IVA incluido. Son pagos únicos, sin suscripción ni renovaciones. El pago se hace en la página de Stripe y la venta se realiza a través de Link (Stripe), que actúa como vendedor, gestiona el IVA y te envía el recibo por email.',
+        text: 'Desbloquear un chat: 0,99 €. Pack de 3 chats: 1,99 €. Acceso ilimitado para siempre: 4,99 €. Precios finales con IVA incluido. Son pagos únicos, sin suscripción ni renovaciones. El pago se hace en la página de Stripe y la venta se realiza a través de Link (Stripe), que actúa como vendedor, gestiona el IVA y te envía el recibo por email.',
       },
       {
         title: 'Entrega y recuperación',
-        text: 'La compra se activa al momento en el dispositivo donde pagas. Al terminar el pago te mostramos un código de recuperación: con él y tu email puedes activarla en otros dispositivos.',
+        text: 'La compra se activa al momento en el dispositivo donde pagas. Al terminar el pago te mostramos un código de recuperación: con él y tu email puedes activarla en otros dispositivos tuyos, hasta 3 en total. Es una compra personal: no está pensada para compartirse con otras personas.',
       },
       {
         title: 'Derecho de desistimiento',
@@ -310,6 +340,7 @@ export const es = {
     mute: 'Silenciar la música',
     unmute: 'Activar la música',
     position: (current: number, total: number) => `Diapositiva ${current} de ${total}`,
+    reportLocked: 'Ver todos los datos',
     demo: 'Demo',
   },
 } as const;

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { WrappedResult } from '../../core';
 import { es } from '../../i18n/es';
+import type { ReadyImage } from './ImageSaver';
 import { PersonPoster, SummaryPoster } from './Posters';
 import {
-  downloadBlob,
   posterFileName,
   renderPoster,
   shareOrDownload,
@@ -16,9 +16,12 @@ export type ShareStatus = 'idle' | 'working' | 'error';
 /**
  * Exports the final card or a person card as an image. The poster is mounted off-screen at
  * its real size only while it is being captured, so it costs nothing the rest of the time.
+ * `hd` (an unlocked chat): full size and no watermark; otherwise smaller and watermarked.
  */
-export function useShare(wrapped: WrappedResult) {
+export function useShare(wrapped: WrappedResult, hd: boolean) {
   const [target, setTarget] = useState<ShareTarget | null>(null);
+  /** A downloaded image waiting for the tap that saves it (see ImageSaver). */
+  const [ready, setReady] = useState<ReadyImage | null>(null);
   const [status, setStatus] = useState<ShareStatus>('idle');
   const node = useRef<HTMLDivElement>(null);
   const pending = useRef<{ resolve: (blob: Blob) => void; reject: (err: unknown) => void } | null>(
@@ -45,7 +48,7 @@ export function useShare(wrapped: WrappedResult) {
       requestAnimationFrame(() => {
         const element = node.current;
         if (!alive || !element) return;
-        renderPoster(element)
+        renderPoster(element, hd)
           .then((blob) => job?.resolve(blob))
           .catch((err: unknown) => job?.reject(err))
           .finally(() => {
@@ -56,7 +59,7 @@ export function useShare(wrapped: WrappedResult) {
     return () => {
       alive = false;
     };
-  }, [target]);
+  }, [target, hd]);
 
   const run = useCallback(
     async (next: ShareTarget, mode: ShareMode) => {
@@ -65,7 +68,7 @@ export function useShare(wrapped: WrappedResult) {
         const blob = await make(next);
         const fileName = posterFileName(wrapped, next);
         if (mode === 'share') await shareOrDownload(blob, fileName, es.app.name);
-        else downloadBlob(blob, fileName);
+        else setReady({ blob, fileName });
         setStatus('idle');
       } catch {
         setStatus('error');
@@ -77,12 +80,14 @@ export function useShare(wrapped: WrappedResult) {
   let content: ReactNode = null;
   if (target?.type === 'summary') {
     const slide = wrapped.slides.find((s) => s.kind === 'summary');
-    if (slide?.kind === 'summary') content = <SummaryPoster wrapped={wrapped} slide={slide} />;
+    if (slide?.kind === 'summary') {
+      content = <SummaryPoster wrapped={wrapped} slide={slide} watermark={!hd} />;
+    }
   } else if (target?.type === 'person') {
     const people = wrapped.slides.find((s) => s.kind === 'people');
     const card =
       people?.kind === 'people' ? people.data.cards.find((c) => c.idx === target.idx) : undefined;
-    if (card) content = <PersonPoster wrapped={wrapped} card={card} />;
+    if (card) content = <PersonPoster wrapped={wrapped} card={card} watermark={!hd} />;
   }
 
   const poster = content ? (
@@ -94,5 +99,7 @@ export function useShare(wrapped: WrappedResult) {
     </div>
   ) : null;
 
-  return { run, make, status, poster };
+  const clearReady = useCallback(() => setReady(null), []);
+
+  return { run, make, status, poster, ready, clearReady };
 }

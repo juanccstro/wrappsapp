@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import type { Analytics, PersonStats, WrappedResult } from '../../core';
 import { nameWords, withoutNames } from '../../core/wrapped/names';
 import {
@@ -9,7 +9,9 @@ import {
 } from '../../core/templates/es/format';
 import { es } from '../../i18n/es';
 import { Button } from '../components/Shell';
-import { BackIcon } from '../components/icons';
+import { BackIcon, DownloadIcon, LockIcon } from '../components/icons';
+import { ImageSaver, type ReadyImage } from '../share/ImageSaver';
+import { renderLongImage, slugify } from '../share/share';
 import { Avatar } from '../slides/common';
 import { paletteVars } from '../theme/palettes';
 
@@ -18,6 +20,10 @@ type Props = {
   analytics: Analytics;
   onBack: () => void;
   onClose: () => void;
+  /** False: only the totals are shown; the rest is locked until the chat is unlocked. */
+  unlocked: boolean;
+  onUnlock: () => void;
+  unlocking?: boolean;
 };
 
 const t = es.report;
@@ -216,7 +222,35 @@ function PersonSheet({
  * "Ver todos los datos": everything the stories summarise, in one scrollable page. Same
  * numbers, same palette; nothing here is new data, so nothing leaves the device either.
  */
-export function Report({ wrapped, analytics: a, onBack, onClose }: Props) {
+export function Report({
+  wrapped,
+  analytics: a,
+  onBack,
+  onClose,
+  unlocked,
+  onUnlock,
+  unlocking = false,
+}: Props) {
+  const content = useRef<HTMLDivElement>(null);
+  const [image, setImage] = useState<ReadyImage | null>(null);
+  const [saving, setSaving] = useState<'idle' | 'working' | 'error'>('idle');
+
+  /** The whole report as one tall picture, made on this device. */
+  const makeImage = async () => {
+    const node = content.current;
+    if (!node || saving === 'working') return;
+    setSaving('working');
+    try {
+      const background = getComputedStyle(node).getPropertyValue('--wr-bg').trim() || '#12062b';
+      const blob = await renderLongImage(node, background);
+      const slug = slugify(wrapped.chatName ?? '');
+      setImage({ blob, fileName: `wrappsapp-datos${slug ? `-${slug}` : ''}.png`, long: true });
+      setSaving('idle');
+    } catch {
+      setSaving('error');
+    }
+  };
+
   const totals = a.totals;
   const names = nameWords(wrapped.participants.map((p) => p.name));
   const topWords = withoutNames(a.topWords, names);
@@ -251,143 +285,201 @@ export function Report({ wrapped, analytics: a, onBack, onClose }: Props) {
   }
   records.push([t.records.peakHour, `${a.peakHour}:00`]);
 
+  const saveButton = (
+    <Button disabled={saving === 'working'} onClick={() => void makeImage()}>
+      <DownloadIcon />
+      {saving === 'working' ? es.share.working : t.saveImage}
+    </Button>
+  );
+
   return (
-    <main
-      className="flex h-full flex-col gap-4 overflow-y-auto bg-[var(--wr-bg)] px-4 pt-5 pb-6"
-      style={paletteVars(wrapped.theme.palette)}
-    >
-      <button
-        type="button"
-        onClick={onBack}
-        className="flex min-h-10 cursor-pointer items-center gap-1 self-start text-sm font-semibold text-white/80 hover:text-white"
+    <>
+      <main
+        className="relative flex h-full flex-col gap-4 overflow-y-auto bg-[var(--wr-bg)] px-4 pt-5 pb-6"
+        style={paletteVars(wrapped.theme.palette)}
       >
-        <BackIcon />
-        {t.back}
-      </button>
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex min-h-10 cursor-pointer items-center gap-1 self-start text-sm font-semibold text-white/80 hover:text-white"
+        >
+          <BackIcon />
+          {t.back}
+        </button>
 
-      <header className="px-1">
-        <p className="font-display text-xs font-bold tracking-widest text-[var(--wr-hi)] uppercase">
-          {es.app.name} · {wrapped.period.label}
-        </p>
-        <h1 className="mt-1 font-display text-3xl leading-tight font-black">{t.title}</h1>
-        {wrapped.chatName && <p className="mt-1 text-sm text-white/80">{wrapped.chatName}</p>}
-      </header>
+        {unlocked && saveButton}
+        {saving === 'error' && (
+          <p role="alert" className="text-center text-sm text-[var(--wr-hi)]">
+            {es.share.error}
+          </p>
+        )}
 
-      <div className="grid grid-cols-3 gap-2">
-        <Tile value={formatNumber(totals.messages)} label={es.slides.messages} />
-        <Tile value={formatNumber(totals.words)} label={es.slides.words} />
-        <Tile value={formatNumber(a.range?.activeDays ?? 0)} label={es.slides.activeDays} />
-        <Tile value={formatNumber(totals.emojis)} label={t.totals.emojis} />
-        <Tile value={formatNumber(totals.media)} label={t.totals.media} />
-        <Tile value={formatNumber(totals.links)} label={t.totals.links} />
-      </div>
+        {/* Everything inside is what the long image shows. */}
+        <div ref={content} className="flex flex-col gap-4 bg-[var(--wr-bg)] py-1">
+          <header className="px-1">
+            <p className="font-display text-xs font-bold tracking-widest text-[var(--wr-hi)] uppercase">
+              {es.app.name} · {wrapped.period.label}
+            </p>
+            <h1 className="mt-1 font-display text-3xl leading-tight font-black">{t.title}</h1>
+            {wrapped.chatName && <p className="mt-1 text-sm text-white/80">{wrapped.chatName}</p>}
+          </header>
 
-      {a.months.length > 1 && (
-        <Section title={t.overTime} hint={t.overTimeHint}>
-          <MonthChart months={a.months} />
-        </Section>
-      )}
+          <div className="grid grid-cols-3 gap-2">
+            <Tile value={formatNumber(totals.messages)} label={es.slides.messages} />
+            <Tile value={formatNumber(totals.words)} label={es.slides.words} />
+            <Tile value={formatNumber(a.range?.activeDays ?? 0)} label={es.slides.activeDays} />
+            <Tile value={formatNumber(totals.emojis)} label={t.totals.emojis} />
+            <Tile value={formatNumber(totals.media)} label={t.totals.media} />
+            <Tile value={formatNumber(totals.links)} label={t.totals.links} />
+          </div>
 
-      <Section title={t.weekdaysTitle}>
-        <Bars values={a.weekdayTotals} labels={t.weekdays} />
-      </Section>
-
-      <Section title={t.hours} hint={t.hoursHint}>
-        <Heatmap heatmap={a.heatmap} />
-      </Section>
-
-      <Section title={t.ranking}>
-        <ol className="flex flex-col gap-2.5">
-          {ranking.map((p, i) => (
-            <li key={p.idx} className="flex items-center gap-3">
-              <span className="w-5 text-right font-display text-sm font-black text-white/70">
-                {i + 1}
-              </span>
-              <Avatar idx={p.idx} name={name(p.idx)} size={34} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2 text-sm">
-                  <span className="truncate font-bold">{name(p.idx)}</span>
-                  <span className="font-display text-xs font-bold tabular-nums">
-                    {formatNumber(p.messages)} · {percent(p.share)}
+          {!unlocked && (
+            <div className="relative">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none flex max-h-[34rem] flex-col gap-4 overflow-hidden blur-lg select-none"
+              >
+                <Section title={t.hours} hint={t.hoursHint}>
+                  <Heatmap heatmap={a.heatmap} />
+                </Section>
+                <Section title={t.weekdaysTitle}>
+                  <Bars values={a.weekdayTotals} labels={t.weekdays} />
+                </Section>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center px-3">
+                <div className="flex w-full max-w-xs flex-col items-center gap-3 rounded-3xl border border-white/20 bg-black/50 p-5 text-center backdrop-blur-md">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--wr-hi)] text-2xl text-[#12062b]">
+                    <LockIcon />
                   </span>
-                </div>
-                <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/15">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${Math.max(2, 100 * (p.messages / maxMessages))}%`,
-                      background: i === 0 ? 'var(--wr-hi)' : 'rgba(255,255,255,0.85)',
-                    }}
-                  />
+                  <h2 className="font-display text-xl leading-tight font-black">{t.lockedTitle}</h2>
+                  <p className="text-sm leading-snug text-white/85">{t.lockedText}</p>
+                  <Button className="w-full" disabled={unlocking} onClick={onUnlock}>
+                    {unlocking ? es.lock.working : es.lock.cta}
+                  </Button>
                 </div>
               </div>
-            </li>
-          ))}
-        </ol>
-      </Section>
-
-      <Section title={t.people}>
-        <ul className="flex flex-col gap-3">
-          {ranking.map((p) => (
-            <PersonSheet
-              key={p.idx}
-              person={p}
-              wrapped={wrapped}
-              mediaTypesKnown={a.mediaTypesKnown}
-              names={names}
-            />
-          ))}
-        </ul>
-      </Section>
-
-      {topWords.length > 0 && (
-        <Section title={t.words}>
-          <ul className="flex flex-wrap gap-2">
-            {topWords.slice(0, 20).map((w) => (
-              <li key={w.key} className="rounded-full bg-white/12 px-3 py-1 text-sm font-semibold">
-                {w.key} <span className="text-white/65 tabular-nums">{formatNumber(w.count)}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      {a.topEmojis.length > 0 && (
-        <Section title={t.emojis}>
-          <ul className="grid grid-cols-5 gap-2 text-center">
-            {a.topEmojis.map((e) => (
-              <li key={e.key} className="rounded-2xl bg-white/10 py-2">
-                <span className="block text-2xl">{e.key}</span>
-                <span className="block text-xs tabular-nums text-white/75">
-                  {formatNumber(e.count)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      <Section title={t.records.title}>
-        <dl className="flex flex-col gap-2 text-sm">
-          {records.map(([label, value]) => (
-            <div
-              key={label}
-              className="flex items-baseline justify-between gap-3 border-b border-white/10 pb-2"
-            >
-              <dt className="text-white/75">{label}</dt>
-              <dd className="text-right font-bold">{value}</dd>
             </div>
-          ))}
-        </dl>
-      </Section>
+          )}
 
-      <div className="flex flex-col gap-2 pt-2">
-        <Button onClick={onBack}>{t.back}</Button>
-        <Button variant="ghost" onClick={onClose}>
-          {es.story.close}
-        </Button>
-      </div>
-      <p className="text-center text-xs text-white/60">{es.app.privacy}</p>
-    </main>
+          {unlocked && (
+            <>
+              {a.months.length > 1 && (
+                <Section title={t.overTime} hint={t.overTimeHint}>
+                  <MonthChart months={a.months} />
+                </Section>
+              )}
+
+              <Section title={t.weekdaysTitle}>
+                <Bars values={a.weekdayTotals} labels={t.weekdays} />
+              </Section>
+
+              <Section title={t.hours} hint={t.hoursHint}>
+                <Heatmap heatmap={a.heatmap} />
+              </Section>
+
+              <Section title={t.ranking}>
+                <ol className="flex flex-col gap-2.5">
+                  {ranking.map((p, i) => (
+                    <li key={p.idx} className="flex items-center gap-3">
+                      <span className="w-5 text-right font-display text-sm font-black text-white/70">
+                        {i + 1}
+                      </span>
+                      <Avatar idx={p.idx} name={name(p.idx)} size={34} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2 text-sm">
+                          <span className="truncate font-bold">{name(p.idx)}</span>
+                          <span className="font-display text-xs font-bold tabular-nums">
+                            {formatNumber(p.messages)} · {percent(p.share)}
+                          </span>
+                        </div>
+                        <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/15">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${Math.max(2, 100 * (p.messages / maxMessages))}%`,
+                              background: i === 0 ? 'var(--wr-hi)' : 'rgba(255,255,255,0.85)',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </Section>
+
+              <Section title={t.people}>
+                <ul className="flex flex-col gap-3">
+                  {ranking.map((p) => (
+                    <PersonSheet
+                      key={p.idx}
+                      person={p}
+                      wrapped={wrapped}
+                      mediaTypesKnown={a.mediaTypesKnown}
+                      names={names}
+                    />
+                  ))}
+                </ul>
+              </Section>
+
+              {topWords.length > 0 && (
+                <Section title={t.words}>
+                  <ul className="flex flex-wrap gap-2">
+                    {topWords.slice(0, 20).map((w) => (
+                      <li
+                        key={w.key}
+                        className="rounded-full bg-white/12 px-3 py-1 text-sm font-semibold"
+                      >
+                        {w.key}{' '}
+                        <span className="text-white/65 tabular-nums">{formatNumber(w.count)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+
+              {a.topEmojis.length > 0 && (
+                <Section title={t.emojis}>
+                  <ul className="grid grid-cols-5 gap-2 text-center">
+                    {a.topEmojis.map((e) => (
+                      <li key={e.key} className="rounded-2xl bg-white/10 py-2">
+                        <span className="block text-2xl">{e.key}</span>
+                        <span className="block text-xs tabular-nums text-white/75">
+                          {formatNumber(e.count)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+
+              <Section title={t.records.title}>
+                <dl className="flex flex-col gap-2 text-sm">
+                  {records.map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="flex items-baseline justify-between gap-3 border-b border-white/10 pb-2"
+                    >
+                      <dt className="text-white/75">{label}</dt>
+                      <dd className="text-right font-bold">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Section>
+            </>
+          )}
+          <p className="text-center text-xs text-white/60">{es.share.footer}</p>
+        </div>
+
+        <div className="flex flex-col gap-2 pt-2">
+          {unlocked && saveButton}
+          <Button onClick={onBack}>{t.back}</Button>
+          <Button variant="ghost" onClick={onClose}>
+            {es.story.close}
+          </Button>
+        </div>
+        <p className="text-center text-xs text-white/60">{es.app.privacy}</p>
+      </main>
+      <ImageSaver image={image} onClose={() => setImage(null)} />
+    </>
   );
 }

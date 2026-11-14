@@ -10,8 +10,46 @@ export const POSTER = { width: 1080, height: 1920 } as const;
 
 const display: CSSProperties = { fontFamily: 'var(--font-display)', fontWeight: 900 };
 
+/** Diagonal brand lines across the free version of a poster. */
+function Watermark() {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: -500,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-around',
+        transform: 'rotate(-28deg)',
+        zIndex: 2,
+        pointerEvents: 'none',
+      }}
+    >
+      {Array.from({ length: 12 }, (_, i) => (
+        <p
+          key={i}
+          style={{
+            ...display,
+            margin: 0,
+            whiteSpace: 'nowrap',
+            fontSize: 70,
+            letterSpacing: 8,
+            color: 'rgba(255,255,255,0.22)',
+            textShadow: '0 2px 6px rgba(0,0,0,0.25)',
+            marginLeft: i % 2 ? -260 : 0,
+          }}
+        >
+          {`${es.share.watermark}   ·   ${es.share.watermark}   ·   ${es.share.watermark}`}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+type FrameProps = { wrapped: WrappedResult; watermark?: boolean; children: ReactNode };
+
 /** Common frame of every exported image: palette, brand line and footer. */
-function Frame({ wrapped, children }: { wrapped: WrappedResult; children: ReactNode }) {
+function Frame({ wrapped, watermark = false, children }: FrameProps) {
   return (
     <div
       style={{
@@ -72,6 +110,7 @@ function Frame({ wrapped, children }: { wrapped: WrappedResult; children: ReactN
         </div>
         <p style={{ margin: 0, fontSize: 30, opacity: 0.8 }}>{es.share.footer}</p>
       </div>
+      {watermark && <Watermark />}
     </div>
   );
 }
@@ -100,13 +139,15 @@ const tile: CSSProperties = {
 export function SummaryPoster({
   wrapped,
   slide,
+  watermark = false,
 }: {
   wrapped: WrappedResult;
   slide: Extract<Slide, { kind: 'summary' }>;
+  watermark?: boolean;
 }) {
   const name = (idx: number) => wrapped.participants[idx]?.name ?? '';
   return (
-    <Frame wrapped={wrapped}>
+    <Frame wrapped={wrapped} watermark={watermark}>
       <p style={{ ...display, margin: '56px 0 36px', fontSize: 104, lineHeight: 1.02 }}>
         {wrapped.chatName ?? es.app.tagline}
       </p>
@@ -158,9 +199,17 @@ export function SummaryPoster({
   );
 }
 
-export function PersonPoster({ wrapped, card }: { wrapped: WrappedResult; card: PersonCard }) {
+export function PersonPoster({
+  wrapped,
+  card,
+  watermark = false,
+}: {
+  wrapped: WrappedResult;
+  card: PersonCard;
+  watermark?: boolean;
+}) {
   return (
-    <Frame wrapped={wrapped}>
+    <Frame wrapped={wrapped} watermark={watermark}>
       <div style={{ marginTop: 96 }}>
         <Avatar idx={card.idx} name={card.name} size={340} />
       </div>

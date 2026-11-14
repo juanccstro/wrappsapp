@@ -14,6 +14,8 @@ async function handle(request: WorkerRequest) {
       return session.load([request.text], request.fileName);
     case 'analyze':
       return session.analyze(request.period);
+    case 'text':
+      return session.text();
     case 'clear':
       session.clear();
       return null;

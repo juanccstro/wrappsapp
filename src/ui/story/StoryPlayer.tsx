@@ -1,6 +1,7 @@
 import { motion, MotionConfig, useReducedMotion, type TargetAndTransition } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import type { AudioPlayer } from '../../audio/player';
+import { isLockedSlide } from '../../billing/locks';
 import { sceneFor } from '../../audio/scenes';
 import type { Slide, SlideKind, WrappedResult } from '../../core';
 import { es } from '../../i18n/es';
@@ -8,6 +9,7 @@ import { Button } from '../components/Shell';
 import {
   CloseIcon,
   DownloadIcon,
+  LockIcon,
   PauseIcon,
   PlayIcon,
   ShareIcon,
@@ -20,6 +22,7 @@ import type { SlideCtx } from '../slides/common';
 import { CARD_MS } from '../slides/PersonCards';
 import { SlideView } from '../slides/SlideView';
 import { slideDurationMs } from '../slides/timing';
+import { ImageSaver } from '../share/ImageSaver';
 import { useShare } from '../share/useShare';
 import { paletteVars, slideGradient } from '../theme/palettes';
 
@@ -33,8 +36,14 @@ type Props = {
   onClose: () => void;
   /** Opens the full report ("Ver todos los datos"). */
   onOpenReport: () => void;
-  /** Coming back from the report: open on the final card instead of the intro. */
-  startAtEnd?: boolean;
+  /** Slide to open on: 0, the last one coming back from the report, or where a payment began. */
+  startAt?: number;
+  /** False: the juiciest slides are locked, the report too, and images are not HD. */
+  unlocked: boolean;
+  /** Tapped a lock: unlock this chat (with what the device has, or by paying). */
+  onUnlock: (at: number) => void;
+  /** Checking or applying a purchase. */
+  unlocking?: boolean;
 };
 
 /** The people slide lasts as long as its cards need. */
@@ -111,15 +120,16 @@ export function StoryPlayer({
   onToggleMute,
   onClose,
   onOpenReport,
-  startAtEnd = false,
+  startAt = 0,
+  unlocked,
+  onUnlock,
+  unlocking = false,
 }: Props) {
   const reduced = useReducedMotion() ?? false;
   const slides = wrapped.slides;
   const count = slides.length;
 
-  const [index, setIndex] = useState(() =>
-    startAtEnd ? Math.max(0, wrapped.slides.length - 1) : 0,
-  );
+  const [index, setIndex] = useState(() => clampIndex(startAt, wrapped.slides.length));
   const [userPaused, setUserPaused] = useState(false);
   const [holding, setHolding] = useState(false);
   const [hidden, setHidden] = useState(() => document.hidden);
@@ -127,10 +137,12 @@ export function StoryPlayer({
 
   const slide = slides[clampIndex(index, count)];
   const isLast = index >= count - 1;
-  const running = !userPaused && !holding && !hidden && !isLast;
+  // A locked slide waits for a tap: either to unlock it or to move on.
+  const locked = slide ? isLockedSlide(slide.kind, unlocked) : false;
+  const running = !userPaused && !holding && !hidden && !isLast && !locked;
   const quizAnswered = slide?.kind === 'quiz' && answers[slide.id] !== undefined;
 
-  const share = useShare(wrapped);
+  const share = useShare(wrapped, unlocked);
   const { run: runShare, status: shareStatus, make: makePoster } = share;
 
   // Development only: lets the poster be inspected without triggering a download.
@@ -357,9 +369,36 @@ export function StoryPlayer({
         transition={{ duration: reduced || fast ? 0.2 : EXIT_MS / 1000, ease }}
       >
         <Background kind={wrapped.theme.background} seed={wrapped.seed} position={at} />
-        <div className="relative h-full">
-          <SlideView slide={shown} ctx={ctx} />
-        </div>
+        {isLockedSlide(shown.kind, unlocked) ? (
+          <>
+            {/* The slide is there, out of focus: enough to know what is being hidden. */}
+            <div
+              className="pointer-events-none relative h-full scale-105 blur-lg saturate-150"
+              aria-hidden="true"
+            >
+              <SlideView slide={shown} ctx={ctx} />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center px-6">
+              <div
+                data-no-nav
+                className="flex w-full max-w-xs flex-col items-center gap-3 rounded-3xl border border-white/20 bg-black/45 p-5 text-center backdrop-blur-md"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--wr-hi)] text-2xl text-[#12062b]">
+                  <LockIcon />
+                </span>
+                <p className="font-display text-xl leading-tight font-black">{shown.title}</p>
+                <p className="text-sm leading-snug text-white/85">{es.lock.text}</p>
+                <Button className="w-full" disabled={unlocking} onClick={() => onUnlock(at)}>
+                  {unlocking ? es.lock.working : es.lock.cta}
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="relative h-full">
+            <SlideView slide={shown} ctx={ctx} />
+          </div>
+        )}
       </motion.section>
     );
   };
@@ -394,7 +433,7 @@ export function StoryPlayer({
 
         {/* Screen readers get each slide as it arrives. */}
         <p className="sr-only" aria-live="polite" aria-atomic="true">
-          {slide.title}. {slide.body}
+          {locked ? `${es.lock.title}. ${es.lock.text}` : `${slide.title}. ${slide.body}`}
         </p>
 
         {/* Chrome */}
@@ -484,7 +523,18 @@ export function StoryPlayer({
                 {es.share.downloadShort}
               </Button>
             </div>
+            {!unlocked && (
+              <button
+                type="button"
+                onClick={() => onUnlock(index)}
+                className="flex min-h-9 cursor-pointer items-center justify-center gap-1.5 text-xs font-semibold text-white/85 underline underline-offset-4"
+              >
+                <LockIcon className="text-[var(--wr-hi)]" />
+                {es.share.hdUpsell}
+              </button>
+            )}
             <Button variant="secondary" onClick={onOpenReport}>
+              {!unlocked && <LockIcon />}
               {es.story.report}
             </Button>
             <div className="flex justify-center gap-6">
@@ -517,6 +567,7 @@ export function StoryPlayer({
               : ''}
         </p>
         {share.poster}
+        <ImageSaver image={share.ready} onClose={share.clearReady} />
       </div>
     </MotionConfig>
   );

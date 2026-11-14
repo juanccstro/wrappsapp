@@ -1,4 +1,4 @@
-import { FINGERPRINT_TTL_S, FREE_USES, PRODUCTS, type ProductId } from './config.js';
+import { FINGERPRINT_TTL_S, FREE_USES, MAX_DEVICES, PRODUCTS, type ProductId } from './config.js';
 import {
   isDeviceId,
   keyedHash,
@@ -27,9 +27,12 @@ type BuyerRecord = {
   spent: string[];
   codes: string[];
   purchases?: Purchase[];
+  /** Devices linked to this buyer (at most MAX_DEVICES), so a code cannot be passed around. */
+  devices?: string[];
 };
 
-export type RestoreOutcome = 'restored' | 'already_active' | 'refund_pending' | 'refunded';
+export type RestoreOutcome =
+  'restored' | 'already_active' | 'refund_pending' | 'refunded' | 'device_limit';
 
 export type Status = {
   /** False while billing is not configured: the app then has no limit. */
@@ -237,6 +240,12 @@ export function createBilling(store: Store, secret: string) {
       device.buyer = key;
       await store.set(deviceKey(input.deviceId), device);
     }
+    // The device that paid always counts as one of the buyer's devices.
+    const buyer = await loadBuyer(key);
+    if (buyer && !(buyer.devices ?? []).includes(input.deviceId)) {
+      buyer.devices = [...(buyer.devices ?? []), input.deviceId];
+      await store.set(buyerKey(key), buyer);
+    }
   }
 
   /**
@@ -269,6 +278,18 @@ export function createBilling(store: Store, secret: string) {
 
     const already = device.buyer === key;
     if (!already) {
+      const devices = buyer.devices ?? [];
+      if (!devices.includes(id)) {
+        // A purchase works on a few devices of its owner, not on a whole group of friends.
+        if (devices.length >= MAX_DEVICES) {
+          return {
+            status: statusOf(id, device, await loadBuyer(device.buyer)),
+            outcome: 'device_limit',
+          };
+        }
+        buyer.devices = [...devices, id];
+        await store.set(buyerKey(key), buyer);
+      }
       device.buyer = key;
       await store.set(deviceKey(id), device);
     }

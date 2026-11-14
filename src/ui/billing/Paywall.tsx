@@ -6,7 +6,8 @@ import { es } from '../../i18n/es';
 import { Button } from '../components/Shell';
 import { BackIcon, CheckIcon, CloseIcon, LockIcon } from '../components/icons';
 
-export type PaywallView = 'limit' | 'more' | 'restore' | 'success' | 'pending' | 'cancel' | 'error';
+export type PaywallView =
+  'unlock' | 'more' | 'restore' | 'success' | 'pending' | 'cancel' | 'error';
 
 type Props = {
   view: PaywallView | null;
@@ -105,11 +106,11 @@ export function Paywall(props: Props) {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.16 }}
                 >
-                  {(view === 'limit' || view === 'more') && (
+                  {(view === 'unlock' || view === 'more') && (
                     <Plans
                       {...props}
                       titleId={titleId}
-                      limitReached={view === 'limit'}
+                      unlocking={view === 'unlock'}
                       onRestoreView={() => setView('restore')}
                     />
                   )}
@@ -168,12 +169,11 @@ function Heading({ id, children }: { id: string; children: ReactNode }) {
 
 function Plans({
   titleId,
-  status,
-  limitReached,
+  unlocking,
   onCheckout,
   onRestoreView,
   onTerms,
-}: Props & { titleId: string; limitReached: boolean; onRestoreView: () => void }) {
+}: Props & { titleId: string; unlocking: boolean; onRestoreView: () => void }) {
   const [product, setProduct] = useState<Product>('unlimited');
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -192,16 +192,26 @@ function Plans({
     }
   };
 
-  const plans: Product[] = ['unlimited', 'pack3'];
+  // Best value first; the single chat last, as the small step that makes the rest look cheap.
+  const plans: Product[] = ['unlimited', 'pack3', 'chat'];
 
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <Heading id={titleId}>{limitReached ? t.limitTitle : t.moreTitle}</Heading>
+        <Heading id={titleId}>{unlocking ? t.unlockTitle : t.moreTitle}</Heading>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
-          {limitReached ? t.limitText(status?.limit ?? 2) : t.moreText}
+          {unlocking ? t.unlockText : t.moreText}
         </p>
       </div>
+
+      <ul className="flex flex-col gap-1.5 text-sm">
+        {t.perks.map((perk) => (
+          <li key={perk} className="flex items-start gap-2">
+            <CheckIcon className="mt-0.5 shrink-0 text-[var(--wr-d)]" strokeWidth={3} />
+            <span className="text-white/90">{perk}</span>
+          </li>
+        ))}
+      </ul>
 
       <div role="radiogroup" aria-label={t.moreTitle} className="flex flex-col gap-2.5">
         {plans.map((id) => {

@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { env, PRODUCTS, type ProductId } from './config.js';
+import { env, isProductId, PRODUCTS, type ProductId } from './config.js';
 
 let client: Stripe | null | undefined;
 
@@ -15,7 +15,7 @@ const priceIds = new Map<ProductId, string>();
 
 /**
  * The price created in the Stripe dashboard for a product, found by its lookup key
- * (wrappsapp_pack3, wrappsapp_unlimited), so payments and reports show the real catalogue
+ * (wrappsapp_chat, wrappsapp_pack3, wrappsapp_unlimited), so payments and reports show the real catalogue
  * products. Null if it does not exist in this account (e.g. a test account without them):
  * then the checkout describes the product inline instead.
  */
@@ -97,7 +97,7 @@ export function paidCheckout(session: Stripe.Checkout.Session): PaidCheckout | n
   const deviceId = session.metadata?.deviceId;
   const product = session.metadata?.product;
   const email = session.customer_details?.email ?? session.customer_email;
-  if (!deviceId || (product !== 'pack3' && product !== 'unlimited') || !email) return null;
+  if (!deviceId || !isProductId(product) || !email) return null;
   return { id: session.id, deviceId, product, email };
 }
 
@@ -137,7 +137,7 @@ export async function refundTarget(
   const session = sessions.data[0];
   const product = session?.metadata?.product;
   const email = session?.customer_details?.email ?? session?.customer_email;
-  if (!session || (product !== 'pack3' && product !== 'unlimited') || !email) return null;
+  if (!session || !isProductId(product) || !email) return null;
   const total = session.amount_total ?? 0;
   const refunded = object.object === 'charge' ? object.amount_refunded : object.amount;
   return { checkoutId: session.id, email, product, full: refunded >= total };

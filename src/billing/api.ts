@@ -10,7 +10,7 @@ export type UsageStatus = {
   remaining: number | null;
 };
 
-export type Product = 'pack3' | 'unlimited';
+export type Product = 'chat' | 'pack3' | 'unlimited';
 
 export class BillingError extends Error {
   readonly code: string;
@@ -65,7 +65,8 @@ export const confirmCheckout = (sessionId: string) =>
   );
 
 /** What happened when restoring (mirrors RestoreOutcome in server/billing.ts). */
-export type RestoreOutcome = 'restored' | 'already_active' | 'refund_pending' | 'refunded';
+export type RestoreOutcome =
+  'restored' | 'already_active' | 'refund_pending' | 'refunded' | 'device_limit';
 
 export const restorePurchase = (email: string, code: string) =>
   call<{ status: UsageStatus; outcome: RestoreOutcome }>('restore', { email, code });

@@ -16,16 +16,15 @@ function setup() {
 }
 
 describe('free tier', () => {
-  it('allows two different chats, then blocks the third', async () => {
+  it('unlocks the first chat, then leaves the next ones locked', async () => {
     const { billing, device } = setup();
     const { id, device: d } = await device();
-    expect(await billing.status(id, d)).toMatchObject({ used: 0, limit: 2, remaining: 2 });
+    expect(await billing.status(id, d)).toMatchObject({ used: 0, limit: 1, remaining: 1 });
 
     expect((await billing.consume(id, d, chat(1))).allowed).toBe(true);
-    expect((await billing.consume(id, d, chat(2))).allowed).toBe(true);
-    const third = await billing.consume(id, d, chat(3));
-    expect(third.allowed).toBe(false);
-    expect(third.status).toMatchObject({ used: 2, limit: 2, remaining: 0, unlimited: false });
+    const second = await billing.consume(id, d, chat(2));
+    expect(second.allowed).toBe(false);
+    expect(second.status).toMatchObject({ used: 1, limit: 1, remaining: 0, unlimited: false });
   });
 
   it('never charges twice for the same chat (another period, seeing it again)', async () => {
@@ -35,7 +34,8 @@ describe('free tier', () => {
     await billing.consume(id, d, chat(1));
     await billing.consume(id, d, chat(2));
     expect((await billing.consume(id, d, chat(1))).allowed).toBe(true);
-    expect((await billing.status(id, d)).used).toBe(2);
+    expect((await billing.consume(id, d, chat(2))).allowed).toBe(false);
+    expect((await billing.status(id, d)).used).toBe(1);
   });
 
   it('remembers the device after the browser data is cleared (same phone, same network)', async () => {
@@ -58,7 +58,7 @@ describe('free tier', () => {
 
     const friend = await device(undefined, '91.200.7');
     expect(friend.id).not.toBe(mine.id);
-    expect((await billing.status(friend.id, friend.device)).remaining).toBe(2);
+    expect((await billing.status(friend.id, friend.device)).remaining).toBe(1);
   });
 
   it('gives a new device its own free uses', async () => {
@@ -75,7 +75,7 @@ describe('purchases', () => {
   const buy = async (
     billing: ReturnType<typeof setup>['billing'],
     deviceId: string,
-    product: 'pack3' | 'unlimited',
+    product: 'chat' | 'pack3' | 'unlimited',
     checkoutId = `cs_test_${product}`,
   ) =>
     billing.applyPurchase({
@@ -86,6 +86,16 @@ describe('purchases', () => {
       recoveryCode: 'ABCD-EFGH-JKLM',
     });
 
+  it('a single chat unlock adds one chat', async () => {
+    const { billing, device } = setup();
+    const { id } = await device();
+    await billing.consume(id, (await device(id)).device, chat(1));
+    expect((await billing.consume(id, (await device(id)).device, chat(2))).allowed).toBe(false);
+    await buy(billing, id, 'chat');
+    expect((await billing.consume(id, (await device(id)).device, chat(2))).allowed).toBe(true);
+    expect((await billing.consume(id, (await device(id)).device, chat(3))).allowed).toBe(false);
+  });
+
   it('a pack adds three more chats', async () => {
     const { billing, device } = setup();
     const { id } = await device();
@@ -93,7 +103,7 @@ describe('purchases', () => {
     await buy(billing, id, 'pack3');
 
     let d = (await device(id)).device;
-    expect(await billing.status(id, d)).toMatchObject({ used: 2, limit: 5, remaining: 3 });
+    expect(await billing.status(id, d)).toMatchObject({ used: 1, limit: 4, remaining: 3 });
     for (const n of [3, 4, 5]) {
       d = (await device(id)).device;
       expect((await billing.consume(id, d, chat(n))).allowed).toBe(true);
@@ -107,7 +117,7 @@ describe('purchases', () => {
     const { id } = await device();
     await buy(billing, id, 'pack3', 'cs_test_same');
     await buy(billing, id, 'pack3', 'cs_test_same');
-    expect((await billing.status(id, (await device(id)).device)).limit).toBe(5);
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(4);
   });
 
   it('unlimited never blocks', async () => {
@@ -145,6 +155,26 @@ describe('purchases', () => {
     expect(restored).toMatchObject({ outcome: 'restored', status: { unlimited: true } });
   });
 
+  it('works on at most 3 devices, so a code cannot unlock a whole group', async () => {
+    const { billing, device } = setup();
+    const phone = await device(undefined, '83.45.12', sha('phone'));
+    await buy(billing, phone.id, 'unlimited');
+    const restoreOn = async (n: number) => {
+      const other = await device(undefined, `10.0.${n}`, sha(`device ${n}`));
+      return billing.restore(other.id, other.device, 'ana@example.com', 'ABCD-EFGH-JKLM');
+    };
+    expect((await restoreOn(1))?.outcome).toBe('restored');
+    expect((await restoreOn(2))?.outcome).toBe('restored');
+    const fourth = await restoreOn(3);
+    expect(fourth?.outcome).toBe('device_limit');
+    expect(fourth?.status.unlimited).toBe(false);
+    // A device already linked keeps working.
+    const again = await device(phone.id);
+    expect(
+      (await billing.restore(phone.id, again.device, 'ana@example.com', 'ABCD-EFGH-JKLM'))?.outcome,
+    ).toBe('already_active');
+  });
+
   it('stores no email, chat or code in clear', async () => {
     const { billing, device, store } = setup();
     const { id, device: d } = await device();
@@ -178,14 +208,14 @@ describe('refunds and restore feedback', () => {
     const { billing, device } = setup();
     const { id } = await device();
     await buyPack(billing, id);
-    expect((await billing.status(id, (await device(id)).device)).limit).toBe(5);
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(4);
 
     await refund(billing, 'refund_pending');
-    expect((await billing.status(id, (await device(id)).device)).limit).toBe(2);
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(1);
     await refund(billing, 'refunded');
-    expect((await billing.status(id, (await device(id)).device)).limit).toBe(2);
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(1);
     await refund(billing, 'active');
-    expect((await billing.status(id, (await device(id)).device)).limit).toBe(5);
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(4);
   });
 
   it('tells whether the purchase was restored, already active, or refunded', async () => {
@@ -213,7 +243,7 @@ describe('refunds and restore feedback', () => {
       'ABCDEFGHJKLM',
     );
     expect(pending?.outcome).toBe('refund_pending');
-    expect(pending?.status.limit).toBe(2);
+    expect(pending?.status.limit).toBe(1);
 
     await refund(billing, 'refunded');
     expect(
@@ -235,9 +265,9 @@ describe('refunds and restore feedback', () => {
     delete buyer?.purchases;
     await store.set(key, buyer);
 
-    expect((await billing.status(id, (await device(id)).device)).limit).toBe(5);
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(4);
     await refund(billing, 'refunded', 'cs_live_old');
-    expect((await billing.status(id, (await device(id)).device)).limit).toBe(2);
+    expect((await billing.status(id, (await device(id)).device)).limit).toBe(1);
     const other = await device(undefined, '10.0.2', sha('other'));
     expect(
       (await billing.restore(other.id, other.device, 'ana@example.com', 'ABCD-EFGH-JKLM'))?.outcome,

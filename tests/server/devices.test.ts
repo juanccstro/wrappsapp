@@ -47,7 +47,7 @@ describe('recognising a device across browsers', () => {
 
     const after = await visit({ fingerprint: BRAVE_AFTER_SHRED });
     expect(after.id).toBe(first.id);
-    expect(await billing.status(after.id, after.device)).toMatchObject({ used: 2, remaining: 0 });
+    expect(await billing.status(after.id, after.device)).toMatchObject({ used: 1, remaining: 0 });
   });
 
   it('another browser on the same phone sees the same uses', async () => {
@@ -72,7 +72,8 @@ describe('recognising a device across browsers', () => {
     // Chrome comes back with its id and now the cross-browser trace: merged into Brave's.
     const merged = await visit({ deviceId: chrome.id, fingerprint: CHROME });
     expect(merged.id).toBe(brave.id);
-    expect((await billing.status(merged.id, merged.device)).used).toBe(2);
+    // Both chats stay unlocked on the merged device.
+    expect(merged.device.used).toHaveLength(2);
 
     // The old Chrome id keeps pointing to the merged device.
     const again = await visit({ deviceId: chrome.id, fingerprint: CHROME });
@@ -88,6 +89,6 @@ describe('recognising a device across browsers', () => {
       cross: sha('android 1080x2400'),
     });
     expect(other.id).not.toBe(mine.id);
-    expect((await billing.status(other.id, other.device)).remaining).toBe(2);
+    expect((await billing.status(other.id, other.device)).remaining).toBe(1);
   });
 });
