@@ -58,6 +58,8 @@ export const es = {
     dropping: 'Suéltalo aquí',
     choose: 'Elegir archivo',
     formats: 'Sirve el .txt o el .zip de la exportación.',
+    tipTitle: 'Mejor «Sin archivos»',
+    tip: 'Al exportar, elige «Sin archivos»: se exporta y se sube en segundos. Si ya lo exportaste con fotos y vídeos también funciona: solo se lee el texto del chat, nunca tus archivos.',
     back: 'Volver',
     guideTitle: 'Cómo exportar un chat',
     platforms: { android: 'Android', ios: 'iPhone' },
@@ -65,13 +67,13 @@ export const es = {
       android: [
         'Abre el chat y toca los tres puntos de arriba a la derecha.',
         'Toca «Más» y después «Exportar chat».',
-        'Elige «Sin archivos».',
+        'Elige «Sin archivos» (recomendado: es más rápido).',
         'Guarda el archivo o envíatelo, y súbelo aquí.',
       ],
       ios: [
         'Abre el chat y toca el nombre del grupo, arriba.',
         'Baja hasta el final y toca «Exportar chat».',
-        'Elige «Sin archivos».',
+        'Elige «Sin archivos» (recomendado: es más rápido).',
         'Guarda el .zip en Archivos y súbelo aquí.',
       ],
     },
@@ -81,7 +83,8 @@ export const es = {
     not_a_chat:
       'No hemos reconocido este archivo como un chat exportado. Sigue los pasos de abajo y sube el .txt o el .zip que se genera.',
     no_messages: 'Hemos abierto el chat, pero no tiene mensajes de nadie. Prueba con otro.',
-    bad_zip: 'No hemos podido abrir este .zip. Vuelve a exportar el chat y súbelo de nuevo.',
+    bad_zip:
+      'No hemos podido abrir este .zip. Vuelve a exportar el chat eligiendo «Sin archivos» y súbelo de nuevo.',
     zip_without_chat:
       'Este .zip no contiene ningún chat. Tiene que ser el que se genera al pulsar «Exportar chat».',
     no_chat_loaded: 'Primero hay que subir un chat.',

@@ -125,6 +125,12 @@ export function Upload({ error, onFile, onBack }: Props) {
         )}
       </div>
 
+      {/* Clear, before anyone exports: without attachments it is faster, with them it works too. */}
+      <div className="rounded-2xl border border-[var(--wr-d)]/50 bg-[var(--wr-d)]/10 p-4 text-sm leading-relaxed">
+        <p className="font-display font-bold">{es.upload.tipTitle}</p>
+        <p className="mt-1 text-white/85">{es.upload.tip}</p>
+      </div>
+
       <p className="flex items-start gap-2 text-sm text-white/85">
         <LockIcon className="mt-0.5 shrink-0 text-[var(--wr-d)]" />
         {es.app.privacy}
